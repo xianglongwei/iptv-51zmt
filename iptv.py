@@ -102,7 +102,7 @@ def update_m3u_with_online_data(m3u_path, output_path, target_url):
 # 执行逻辑
 if __name__ == "__main__":
     TARGET_URL = "https://epg.51zmt.top:8001/sctvmulticast.html"
-    INPUT_M3U = "2 (1).m3u"        # 你的原始文件
+    INPUT_M3U = "2.m3u"        # 你的原始文件
     OUTPUT_M3U = "2.m3u" # 生成的结果文件
     
     update_m3u_with_online_data(INPUT_M3U, OUTPUT_M3U, TARGET_URL)

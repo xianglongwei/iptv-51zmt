@@ -1,0 +1,37 @@
+name: Daily IPTV Update
+
+on:
+  schedule:
+    # 这里的 cron 表达式代表每天北京时间上午 8:00 运行 (UTC 0:00)
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 允许你在 Actions 页面手动点击运行，方便调试
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置 Python 环境
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: 安装依赖
+      run: |
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: 运行脚本
+      run: |
+        # 请根据仓库中实际的脚本文件名修改，例如 main.py 或 spider.py
+        python iptv.py 
+
+    - name: 提交并推送更改
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add .
+        git commit -m "Auto Update: $(date)" || exit 0
+        git push
