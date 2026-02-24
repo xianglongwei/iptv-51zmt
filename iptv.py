@@ -112,8 +112,4 @@ def process_m3u():
     print("\n所有操作已完成。")
 
 if __name__ == "__main__":
-    TARGET_URL = "https://epg.51zmt.top:8001/multicast/"
-    INPUT_M3U = "2.m3u"        # 你的原始文件
-    OUTPUT_M3U = "2.m3u" # 生成的结果文件
-    
-    update_m3u_with_online_data(INPUT_M3U, OUTPUT_M3U, TARGET_URL)
+    process_m3u()
