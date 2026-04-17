@@ -1,0 +1,8 @@
+{
+  "api_url": "https://epg.51zmt.top:8001/multicast/api/channels/1/",
+  "m3u_file": "2.m3u",
+  "rtp_prefix": "http://192.168.10.1:10000/rtp/",
+  "playseek_param": "?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",
+  "interval_hours": 12,
+  "source_tag": "爬虫默认源"
+}

@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#258cf4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>M3U 管理器</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="flex h-screen flex-col overflow-hidden relative">
+<!-- Header -->
+<header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-6 py-3 shrink-0">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-primary">
+<span class="material-symbols-outlined text-3xl font-bold">layers</span>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold tracking-tight">M3U 管理器</h2>
+</div>
+<div class="relative w-72">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+<input class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary placeholder:text-slate-500 text-slate-900 dark:text-white" placeholder="搜索频道..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"><span class="material-symbols-outlined text-lg">upload_file</span>导入 M3U</button>
+<button id="global-check-btn" class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"><span class="material-symbols-outlined text-lg">checklist</span>全局检测</button>
+<button id="copy-m3u-btn" class="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"><span class="material-symbols-outlined text-lg">content_copy</span>复制M3U链接</button>
+<div class="h-8 w-px bg-slate-200 dark:border-slate-800 mx-2"></div>
+<div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 overflow-hidden" data-alt="User profile avatar icon" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC_-AERYaz07UUqTI1OSZoh0C-J1eTid1QwOLTMqj4EqEHhYBMcy_errJ_Dv68fPfkIkz-goQupnnT2FbuzQbmV1kM5DqdbmpdHGqa0vYFG6z5Ib3hU5n3qRdD85l6Bxt1MgyT9QiSP6GY4ObXCvtpN9fOiA0-p-7tAdjbqGi3ZXse6hGTU8mfJ6dFutkveNd_4VzfvtSjvLAaQKtdsteHyzMRlozrzrFbzMSM0OLaXGgQjdBq5RXwEnPWP-8ouTZ9qhCVFV2ZxcZHr'); background-size: cover;">
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark p-4 flex flex-col gap-6 overflow-y-auto">
+<section>
+<h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 px-2">频道分组</h3>
+<nav>
+<!-- 分类列表将通过JavaScript动态生成 -->
+</nav>
+</section>
+<section>
+<h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 px-2">播放列表</h3>
+<div class="space-y-3 px-2">
+<div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+<p class="text-xs font-medium text-slate-500 mb-1">默认播放列表</p>
+<p class="text-sm font-bold truncate">2.m3u</p>
+<div class="mt-2 flex items-center justify-between text-[10px] text-slate-400">
+<span id="channel-count">0 频道</span>
+<span class="text-green-500 font-bold">活跃</span>
+</div>
+</div>
+</div>
+</section>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto bg-slate-50 dark:bg-background-dark/50 p-6">
+<div class="mb-8 flex items-end justify-between">
+<div>
+<h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-1">所有频道</h1>
+<p id="channel-description" class="text-slate-500 dark:text-slate-400 text-sm">管理所有分组共 0 个流媒体</p>
+</div>
+<div class="flex items-center gap-2 mr-4 py-1 px-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-primary/50 cursor-pointer transition-colors">
+<input id="select-all-channels" class="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary bg-white dark:bg-slate-800" type="checkbox"/>
+<label class="text-sm font-medium text-slate-600 dark:text-slate-300 cursor-pointer" for="select-all-channels">全选</label>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-sm text-slate-500">视图：</span>
+<div class="flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+<button class="p-1.5 rounded bg-primary text-white">
+<span class="material-symbols-outlined text-sm">grid_view</span>
+</button>
+<button class="p-1.5 rounded text-slate-400">
+<span class="material-symbols-outlined text-sm">list</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Grid of Channel Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6" id="channel-grid">
+<!-- 频道卡片将通过JavaScript动态生成 -->
+</div>
+</main>
+    </div>
+    <!-- 频道选择提示对话框 -->
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center" id="selection-dialog">
+        <div class="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white">频道选择确认</h3>
+                <button id="dialog-close-btn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><span class="material-symbols-outlined text-xl">close</span></button>
+            </div>
+            <div class="mb-4">
+                <p class="text-slate-600 dark:text-slate-300">您已选择以下频道：</p>
+                <ul id="selected-channel-list" class="mt-2 space-y-2 max-h-40 overflow-y-auto p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                    <!-- 选中的频道列表将通过JavaScript动态生成 -->
+                </ul>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button id="dialog-cancel-btn" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">取消</button>
+                <button id="dialog-confirm-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">生成M3U</button>
+            </div>
+        </div>
+    </div>
+    <!-- Footer / Status Bar -->
+    <div class="fixed bottom-16 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 z-50 transform translate-y-100% transition-transform" id="selection-bar"><div class="flex items-center gap-2"><span class="text-sm font-medium">已选择 <span id="selected-count" class="text-primary font-bold">0</span> 个频道</span></div><div class="h-4 w-px bg-slate-700 dark:bg-slate-200"></div><button class="flex items-center gap-2 bg-primary text-white px-4 py-1.5 rounded-full text-sm font-bold hover:bg-primary/90 transition-colors"><span class="material-symbols-outlined text-lg">playlist_add</span>生成选中项的 M3U</button><button class="text-slate-400 hover:text-white dark:hover:text-slate-600"><span class="material-symbols-outlined text-lg">close</span></button></div><footer class="bg-white dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 px-6 py-2 flex items-center justify-between shrink-0">
+<div class="flex items-center gap-6 text-xs text-slate-500 font-medium">
+<div class="flex items-center gap-2">
+<span class="h-2 w-2 rounded-full bg-green-500"></span>
+<span id="online-count">0 活跃</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="h-2 w-2 rounded-full bg-red-500"></span>
+<span id="offline-count">0 离线</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">timer</span>
+<span>上次全局检测：12 分钟前</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-xs font-bold text-primary hover:underline">刷新所有列表</button>
+<div class="h-4 w-px bg-slate-200 dark:bg-slate-800"></div>
+<p class="text-[10px] text-slate-400 uppercase tracking-widest">M3U 管理仪表板 V2.4.0</p>
+</div>
+</footer>
+</div>
+
+<script>
+    // 存储所有频道数据
+    let allChannels = [];
+    // 存储当前显示的频道
+    let currentChannels = [];
+    
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取M3U文件信息
+        fetchM3UInfo();
+        // 加载频道数据
+        loadChannels();
+        // 绑定事件
+        bindEvents();
+        // 隐藏选择栏
+        hideSelectionBar();
+    });
+    
+    // 获取M3U文件信息
+    function fetchM3UInfo() {
+        fetch('/api/m3u/info')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log('M3U文件信息:', data.data);
+                } else {
+                    console.error('获取M3U文件信息失败:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('获取M3U文件信息时发生错误:', error);
+            });
+    }
+    
+    // 加载频道数据
+    function loadChannels() {
+        // 从后端API获取真实频道数据
+        fetch('/api/channels')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    allChannels = data.data.channels;
+                    currentChannels = allChannels;
+                    renderChannels(allChannels);
+                    // 更新播放列表频道数量
+                    updateChannelCount(allChannels.length);
+                    // 更新在线和离线频道数量
+                    updateStatusCount(allChannels);
+                    // 加载分类列表
+                    loadCategoryList();
+                } else {
+                    console.error('获取频道列表失败:', data.message);
+                    // 如果API调用失败，显示错误信息
+                    showErrorMessage('获取频道列表失败，请刷新页面重试');
+                }
+            })
+            .catch(error => {
+                console.error('获取频道列表时发生错误:', error);
+                // 如果网络错误，显示错误信息
+                showErrorMessage('网络错误，请检查连接后重试');
+            });
+    }
+    
+    // 显示错误信息
+    function showErrorMessage(message) {
+        const channelGrid = document.getElementById('channel-grid');
+        if (channelGrid) {
+            channelGrid.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <span class="material-symbols-outlined text-6xl text-red-500 mb-4">error</span>
+                    <p class="text-lg text-slate-600 dark:text-slate-400">${message}</p>
+                    <button class="mt-4 px-6 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors" onclick="loadChannels()">
+                        <span class="material-symbols-outlined text-sm">refresh</span>重试
+                    </button>
+                </div>
+            `;
+        }
+    }
+    
+    // 更新频道数量
+    function updateChannelCount(count) {
+        // 更新播放列表频道数量
+        const channelCountElement = document.getElementById('channel-count');
+        if (channelCountElement) {
+            channelCountElement.textContent = `${count} 频道`;
+        }
+        
+        // 更新主标题下方的频道数量
+        const channelDescriptionElement = document.getElementById('channel-description');
+        if (channelDescriptionElement) {
+            channelDescriptionElement.textContent = `管理所有分组共 ${count} 个流媒体`;
+        }
+    }
+    
+    // 更新在线和离线频道数量
+    function updateStatusCount(channels) {
+        const onlineCount = channels.filter(channel => channel.status === 'online').length;
+        const offlineCount = channels.filter(channel => channel.status === 'offline').length;
+        
+        const onlineCountElement = document.getElementById('online-count');
+        if (onlineCountElement) {
+            onlineCountElement.textContent = `${onlineCount} 活跃`;
+        }
+        
+        const offlineCountElement = document.getElementById('offline-count');
+        if (offlineCountElement) {
+            offlineCountElement.textContent = `${offlineCount} 离线`;
+        }
+    }
+    
+    // 加载分类列表
+    function loadCategoryList() {
+        // 从所有频道中提取唯一的分组
+        const categories = [...new Set(allChannels.map(channel => channel.group))];
+        categories.sort();
+        
+        // 添加"所有频道"选项
+        const allCategories = ['所有频道', ...categories];
+        
+        // 获取分类列表容器
+        const categoryNav = document.querySelector('aside nav');
+        if (categoryNav) {
+            // 清空现有分类
+            categoryNav.innerHTML = '';
+            
+            // 添加分类项
+            allCategories.forEach(category => {
+                const categoryItem = document.createElement('a');
+                categoryItem.className = `flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors`;
+                
+                // 根据分类名称选择图标
+                let icon = 'grid_view';
+                if (category === '所有频道') {
+                    icon = 'grid_view';
+                } else if (category === '央视' || category === '央视频道') {
+                    icon = 'live_tv';
+                } else if (category === '地方' || category === '地方频道') {
+                    icon = 'map';
+                } else if (category === '卫视' || category === '卫视频道') {
+                    icon = 'tv';
+                } else if (category === '新闻') {
+                    icon = 'newspaper';
+                } else if (category === '体育') {
+                    icon = 'sports_esports';
+                } else if (category === '电影') {
+                    icon = 'movie';
+                } else if (category === '音乐') {
+                    icon = 'music_note';
+                } else if (category === '少儿') {
+                    icon = 'child_care';
+                } else if (category === '财经') {
+                    icon = 'account_balance';
+                } else {
+                    icon = 'tv';
+                }
+                
+                categoryItem.innerHTML = `<span class="material-symbols-outlined text-xl">${icon}</span>${category}`;
+                
+                // 添加点击事件
+                categoryItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // 切换分类
+                    switchCategory(category);
+                });
+                
+                categoryNav.appendChild(categoryItem);
+            });
+            
+            // 默认选中"所有频道"
+            const firstCategory = categoryNav.querySelector('a:first-child');
+            if (firstCategory) {
+                firstCategory.className = 'flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium';
+            }
+        }
+    }
+    
+    // 切换分类
+    function switchCategory(category) {
+        // 更新分类选中状态
+        const categoryItems = document.querySelectorAll('aside nav a');
+        categoryItems.forEach(item => {
+            item.className = 'flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors';
+        });
+        
+        // 找到当前分类并设置选中状态
+        categoryItems.forEach(item => {
+            if (item.textContent.trim() === category) {
+                item.className = 'flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium';
+            }
+        });
+        
+        // 过滤频道
+        if (category === '所有频道') {
+            currentChannels = allChannels;
+        } else {
+            currentChannels = allChannels.filter(channel => channel.group === category);
+        }
+        
+        // 重新渲染频道列表
+        renderChannels(currentChannels);
+        // 更新播放列表频道数量
+        updateChannelCount(currentChannels.length);
+        // 更新在线和离线频道数量
+        updateStatusCount(currentChannels);
+    }
+    
+    // 渲染频道列表
+    function renderChannels(channels) {
+        const channelGrid = document.getElementById('channel-grid');
+        if (channelGrid) {
+            // 清空现有频道卡片
+            channelGrid.innerHTML = '';
+            
+            if (channels.length === 0) {
+                // 如果没有频道，显示空状态
+                channelGrid.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <span class="material-symbols-outlined text-6xl text-slate-400 mb-4">tv_off</span>
+                        <p class="text-lg text-slate-600 dark:text-slate-400">没有找到频道</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 添加频道卡片
+            channels.forEach(channel => {
+                const channelCard = createChannelCard(channel);
+                channelGrid.appendChild(channelCard);
+            });
+            
+            // 添加添加频道按钮
+            const addChannelCard = document.createElement('div');
+            addChannelCard.className = 'group border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all cursor-pointer';
+            addChannelCard.innerHTML = '<span class="material-symbols-outlined text-4xl mb-2">add_circle</span><span class="font-semibold">添加自定义频道</span>';
+            channelGrid.appendChild(addChannelCard);
+        }
+        
+        // 渲染完成后更新选择计数，确保选择栏状态正确
+        updateSelectionCount();
+    }
+    
+    // 创建频道卡片
+    function createChannelCard(channel) {
+        const card = document.createElement('div');
+        card.className = 'group bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:shadow-lg hover:border-primary/50 transition-all duration-200 relative';
+        
+        const statusClass = channel.status === 'online' ? 'bg-green-500' : 'bg-red-500';
+        const statusText = channel.status === 'online' ? '在线' : '离线';
+        const statusTextClass = channel.status === 'online' ? 'text-green-500' : 'text-red-500';
+        
+        card.innerHTML = `
+            <div class="absolute top-2 left-2 z-10">
+                <input type="checkbox" class="channel-checkbox w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary bg-white dark:bg-slate-800" data-channel-id="${channel.id}">
+            </div>
+            <div class="flex items-start justify-between mb-4">
+                <div class="h-14 w-14 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center p-2 border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div class="w-full h-full bg-slate-200 dark:bg-slate-700 rounded bg-cover" style="background-image: url('${channel.logo}'); background-position: center; background-repeat: no-repeat;"></div>
+                </div>
+                <div class="flex gap-1">
+                    <button class="channel-check-btn p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-primary/10" data-channel-id="${channel.id}">
+                        <span class="material-symbols-outlined text-xl">sync</span>
+                    </button>
+                </div>
+            </div>
+            <div class="mb-4">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="h-2 w-2 rounded-full ${statusClass}"></span>
+                    <span class="text-xs font-medium ${statusTextClass} uppercase tracking-wider">${statusText}</span>
+                </div>
+                <h4 class="font-bold text-slate-900 dark:text-white truncate">${channel.name}</h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400 truncate">${channel.group}</p>
+            </div>
+            <div class="pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button class="channel-copy-btn w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold hover:bg-primary hover:text-white transition-all">
+                    <span class="material-symbols-outlined text-sm">content_copy</span>复制链接
+                </button>
+            </div>
+        `;
+        
+        // 为频道复制按钮添加事件监听器
+        const copyBtn = card.querySelector('.channel-copy-btn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function() {
+                navigator.clipboard.writeText(channel.url)
+                    .then(() => {
+                        showToast('频道链接已复制到剪贴板！');
+                    })
+                    .catch(err => {
+                        console.error('复制失败:', err);
+                        showToast('复制失败，请手动复制', 'error');
+                    });
+            });
+        }
+        
+        // 为频道检测按钮添加事件监听器
+        const checkBtn = card.querySelector('.channel-check-btn');
+        if (checkBtn) {
+            checkBtn.addEventListener('click', function() {
+                const channelId = this.dataset.channelId;
+                checkChannel(channelId);
+            });
+        }
+        
+        return card;
+    }
+    
+    // 更新频道数量
+    function updateChannelCount(count) {
+        const channelCountElement = document.getElementById('channel-count');
+        if (channelCountElement) {
+            channelCountElement.textContent = `${count} 频道`;
+        }
+        
+        const channelDescriptionElement = document.getElementById('channel-description');
+        if (channelDescriptionElement) {
+            channelDescriptionElement.textContent = `管理所有分组共 ${count} 个流媒体`;
+        }
+    }
+    
+    // 更新在线和离线频道数量
+    function updateStatusCount(channels) {
+        const onlineCount = channels.filter(channel => channel.status === 'online').length;
+        const offlineCount = channels.filter(channel => channel.status === 'offline').length;
+        
+        const onlineCountElement = document.getElementById('online-count');
+        if (onlineCountElement) {
+            onlineCountElement.textContent = `${onlineCount} 活跃`;
+        }
+        
+        const offlineCountElement = document.getElementById('offline-count');
+        if (offlineCountElement) {
+            offlineCountElement.textContent = `${offlineCount} 离线`;
+        }
+    }
+    
+    // 获取M3U文件地址并复制到剪贴板
+    function copyM3UUrl() {
+        fetch('/api/m3u/url')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const m3uUrl = data.data.m3u_url;
+                    navigator.clipboard.writeText(m3uUrl)
+                        .then(() => {
+                            showToast('M3U地址已复制到剪贴板！');
+                        })
+                        .catch(err => {
+                            console.error('复制失败:', err);
+                            showToast('复制失败，请手动复制', 'error');
+                        });
+                } else {
+                    console.error('获取M3U地址失败:', data.message);
+                    showToast('获取M3U地址失败', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('获取M3U地址时发生错误:', error);
+                showToast('获取M3U地址时发生错误', 'error');
+            });
+    }
+    
+    // 显示Toast消息
+    function showToast(message, type = 'success') {
+        // 创建Toast元素
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-0 opacity-100 ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
+        toast.innerHTML = `
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined">${type === 'success' ? 'check_circle' : 'error'}</span>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        // 添加到页面
+        document.body.appendChild(toast);
+        
+        // 3秒后自动移除
+        setTimeout(() => {
+            toast.style.transform = 'translateX(100%)';
+            toast.style.opacity = '0';
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 3000);
+    }
+    
+    // 全局检测M3U地址有效性
+    function checkM3UUrl() {
+        const checkButton = document.getElementById('global-check-btn');
+        if (checkButton) {
+            checkButton.innerHTML = '<span class="material-symbols-outlined text-lg">sync</span>检测中...';
+            checkButton.disabled = true;
+        }
+        
+        fetch('/api/m3u/check')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showToast('M3U地址有效！');
+                } else {
+                    showToast('M3U地址无效: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('检测M3U地址时发生错误:', error);
+                showToast('检测M3U地址时发生错误', 'error');
+            })
+            .finally(() => {
+                if (checkButton) {
+                    checkButton.innerHTML = '<span class="material-symbols-outlined text-lg">checklist</span>全局检测';
+                    checkButton.disabled = false;
+                }
+            });
+    }
+    
+    // 显示频道选择提示对话框
+    function showSelectionDialog(selectedChannelIds) {
+        const dialog = document.getElementById('selection-dialog');
+        const channelList = document.getElementById('selected-channel-list');
+        
+        // 清空频道列表
+        channelList.innerHTML = '';
+        
+        // 查找并显示选中的频道名称
+        selectedChannelIds.forEach(channelId => {
+            const channel = allChannels.find(ch => ch.id === channelId);
+            if (channel) {
+                const listItem = document.createElement('li');
+                listItem.className = 'flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300';
+                listItem.innerHTML = `
+                    <span class="material-symbols-outlined text-primary text-xs">check_circle</span>
+                    <span>${channel.name}</span>
+                    <span class="text-xs text-slate-500 dark:text-slate-500">(${channel.group})</span>
+                `;
+                channelList.appendChild(listItem);
+            }
+        });
+        
+        // 显示对话框
+        dialog.classList.remove('hidden');
+        dialog.classList.add('flex');
+    }
+    
+    // 隐藏频道选择提示对话框
+    function hideSelectionDialog() {
+        const dialog = document.getElementById('selection-dialog');
+        dialog.classList.remove('flex');
+        dialog.classList.add('hidden');
+    }
+    
+    // 生成选中项的M3U文件
+    function generateSelectedM3U(selectedChannelIds) {
+        // 调用后端API生成M3U文件
+        fetch('/api/m3u/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                channel_ids: selectedChannelIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // 显示成功消息
+                showToast(data.message);
+                
+                // 将生成的M3U URL复制到剪贴板
+                navigator.clipboard.writeText(data.data.m3u_url)
+                    .then(() => {
+                        showToast('M3U URL已复制到剪贴板！');
+                    })
+                    .catch(err => {
+                        console.error('复制失败:', err);
+                        showToast('M3U URL生成成功，请手动复制: ' + data.data.m3u_url);
+                    });
+            } else {
+                // 显示错误消息
+                showToast(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('生成M3U文件时发生错误:', error);
+            showToast('生成M3U文件时发生错误', 'error');
+        });
+    }
+    
+    // 检测单个频道有效性
+    function checkChannel(channelId) {
+        // 获取并禁用检测按钮
+        const checkBtn = document.querySelector(`.channel-check-btn[data-channel-id="${channelId}"]`);
+        if (checkBtn) {
+            checkBtn.innerHTML = '<span class="material-symbols-outlined text-xl animate-spin">sync</span>';
+            checkBtn.disabled = true;
+        }
+        
+        // 发送检测请求
+        fetch(`/api/channel/${channelId}/check`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // 更新频道状态显示
+                    updateChannelStatus(channelId, data.data.status, data.data.latency);
+                    showToast(`${data.data.channel_name} 检测通过，延迟: ${data.data.latency}ms`);
+                } else {
+                    // 更新频道状态显示为离线
+                    updateChannelStatus(channelId, 'offline', 0);
+                    showToast(`${data.data.channel_name} 检测失败: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('检测频道时发生错误:', error);
+                showToast('检测频道时发生错误', 'error');
+            })
+            .finally(() => {
+                // 恢复检测按钮
+                if (checkBtn) {
+                    checkBtn.innerHTML = '<span class="material-symbols-outlined text-xl">sync</span>';
+                    checkBtn.disabled = false;
+                }
+            });
+    }
+    
+    // 更新频道状态显示
+    function updateChannelStatus(channelId, status, latency) {
+        // 找到对应的频道卡片
+        const card = document.querySelector(`.channel-checkbox[data-channel-id="${channelId}"]`).closest('.group');
+        if (card) {
+            // 更新状态指示器
+            const statusDot = card.querySelector('.rounded-full.h-2.w-2');
+            const statusText = card.querySelector('.text-xs.font-medium.uppercase');
+            
+            if (statusDot && statusText) {
+                if (status === 'online') {
+                    statusDot.className = 'h-2 w-2 rounded-full bg-green-500';
+                    statusText.className = 'text-xs font-medium text-green-500 uppercase tracking-wider';
+                    statusText.textContent = `在线 (${latency}ms)`;
+                } else {
+                    statusDot.className = 'h-2 w-2 rounded-full bg-red-500';
+                    statusText.className = 'text-xs font-medium text-red-500 uppercase tracking-wider';
+                    statusText.textContent = '离线';
+                }
+            }
+        }
+    }
+    
+    // 显示选择栏
+    function showSelectionBar(channelCount) {
+        const selectionBar = document.getElementById('selection-bar');
+        if (selectionBar) {
+            const selectedCountElement = selectionBar.querySelector('#selected-count');
+            if (selectedCountElement) {
+                selectedCountElement.textContent = channelCount;
+            }
+            selectionBar.style.transform = 'translateY(0)';
+        }
+    }
+    
+    // 隐藏选择栏
+    function hideSelectionBar() {
+        const selectionBar = document.getElementById('selection-bar');
+        if (selectionBar) {
+            selectionBar.style.transform = 'translateY(100%)';
+        }
+    }
+    
+    // 更新选择计数
+    function updateSelectionCount() {
+        const checkboxes = document.querySelectorAll('.channel-checkbox:checked');
+        const selectedCount = checkboxes.length;
+        
+        if (selectedCount > 0) {
+            showSelectionBar(selectedCount);
+        } else {
+            hideSelectionBar();
+        }
+        
+        // 更新全选复选框状态
+        const selectAllCheckbox = document.getElementById('select-all-channels');
+        const allCheckboxes = document.querySelectorAll('.channel-checkbox');
+        if (selectAllCheckbox && allCheckboxes.length > 0) {
+            selectAllCheckbox.checked = allCheckboxes.length === selectedCount;
+        }
+    }
+    
+    // 绑定事件
+    function bindEvents() {
+        // 导入M3U按钮点击事件
+        const importButton = document.querySelector('button:first-child');
+        if (importButton) {
+            importButton.addEventListener('click', function() {
+                window.location.href = 'updata.html';
+            });
+        }
+        
+        // 全局检测按钮点击事件
+        const checkButton = document.getElementById('global-check-btn');
+        if (checkButton) {
+            checkButton.addEventListener('click', checkM3UUrl);
+        }
+        
+        // 复制M3U链接按钮点击事件
+        const copyM3UBtn = document.getElementById('copy-m3u-btn');
+        if (copyM3UBtn) {
+            copyM3UBtn.addEventListener('click', copyM3UUrl);
+        }
+        
+        // 搜索功能
+        const searchInput = document.querySelector('input[placeholder="搜索频道..."]');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const filteredChannels = allChannels.filter(channel => {
+                    return channel.name.toLowerCase().includes(searchTerm) || channel.group.toLowerCase().includes(searchTerm);
+                });
+                currentChannels = filteredChannels;
+                renderChannels(filteredChannels);
+                // 更新在线和离线频道数量
+                updateStatusCount(filteredChannels);
+            });
+        }
+        
+        // 全选/取消全选
+        const selectAllCheckbox = document.getElementById('select-all-channels');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.channel-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateSelectionCount();
+            });
+        }
+        
+        // 频道复选框点击事件（使用事件委托）
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('channel-checkbox')) {
+                updateSelectionCount();
+            }
+        });
+        
+        // 生成选中项的M3U
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('button') && e.target.closest('button').textContent.includes('生成选中项的 M3U')) {
+                // 获取选中的频道ID和名称
+                const selectedCheckboxes = document.querySelectorAll('.channel-checkbox:checked');
+                const selectedChannelIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.dataset.channelId));
+                
+                if (selectedChannelIds.length === 0) {
+                    showToast('请先选择至少一个频道', 'error');
+                    return;
+                }
+                
+                // 显示频道选择提示对话框
+                showSelectionDialog(selectedChannelIds);
+            }
+        });
+        
+        // 关闭选择栏
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('button') && e.target.closest('button').querySelector('.material-symbols-outlined')?.textContent === 'close') {
+                // 取消所有选择
+                const checkboxes = document.querySelectorAll('.channel-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                // 隐藏选择栏
+                hideSelectionBar();
+                // 取消全选
+                const selectAllCheckbox = document.getElementById('select-all-channels');
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = false;
+                }
+            }
+        });
+        
+        // 对话框关闭按钮点击事件
+        document.getElementById('dialog-close-btn').addEventListener('click', function() {
+            hideSelectionDialog();
+        });
+        
+        // 对话框取消按钮点击事件
+        document.getElementById('dialog-cancel-btn').addEventListener('click', function() {
+            hideSelectionDialog();
+        });
+        
+        // 对话框确认按钮点击事件
+        document.getElementById('dialog-confirm-btn').addEventListener('click', function() {
+            // 获取选中的频道ID
+            const selectedChannelIds = Array.from(document.querySelectorAll('.channel-checkbox:checked'))
+                .map(cb => parseInt(cb.dataset.channelId));
+            
+            // 调用后端API生成M3U文件
+            generateSelectedM3U(selectedChannelIds);
+            
+            // 关闭对话框
+            hideSelectionDialog();
+        });
+        
+        // 点击对话框外部关闭对话框
+        document.getElementById('selection-dialog').addEventListener('click', function(e) {
+            if (e.target.id === 'selection-dialog') {
+                hideSelectionDialog();
+            }
+        });
+        
+        // 频道复制按钮点击事件（使用事件委托）
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.channel-copy-btn')) {
+                copyM3UUrl();
+            }
+        });
+    }
+    
+    // 辅助函数：查找包含特定文本的元素
+    (function() {
+        // 添加自定义选择器
+        const originalQuerySelectorAll = document.querySelectorAll;
+        document.querySelectorAll = function(selector) {
+            if (selector.includes(':contains(')) {
+                const text = selector.match(/:contains\((.*?)\)/)[1].replace(/'/g, '');
+                const baseSelector = selector.replace(/:contains\(.*?\)/, '');
+                const elements = originalQuerySelectorAll.call(document, baseSelector);
+                return Array.from(elements).filter(element => {
+                    return element.textContent.includes(text);
+                });
+            }
+            return originalQuerySelectorAll.call(document, selector);
+        };
+        
+        // 同样扩展Element.prototype.querySelectorAll
+        const originalElementQuerySelectorAll = Element.prototype.querySelectorAll;
+        Element.prototype.querySelectorAll = function(selector) {
+            if (selector.includes(':contains(')) {
+                const text = selector.match(/:contains\((.*?)\)/)[1].replace(/'/g, '');
+                const baseSelector = selector.replace(/:contains\(.*?\)/, '');
+                const elements = originalElementQuerySelectorAll.call(this, baseSelector);
+                return Array.from(elements).filter(element => {
+                    return element.textContent.includes(text);
+                });
+            }
+            return originalElementQuerySelectorAll.call(this, selector);
+        };
+    })();
+</script>
+</body></html>

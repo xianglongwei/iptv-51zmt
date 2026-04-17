@@ -4,12 +4,12 @@ import os
 
 # --- 配置区 ---
 # 根据截图确认的 API 地址
-API_URL = "https://epg.51zmt.top:8001/multicast/api/channels/1/"
-M3U_FILE = "2.m3u"
+API_URL = os.getenv("IPTV_API_URL", "https://epg.51zmt.top:8001/multicast/api/channels/1/")
+M3U_FILE = os.getenv("IPTV_M3U_FILE", "2.m3u")
 # 你的局域网转发前缀
-RTP_PREFIX = "http://192.168.10.1:10000/rtp/"
+RTP_PREFIX = os.getenv("IPTV_RTP_PREFIX", "http://192.168.10.1:10000/rtp/")
 # 必填的回放时间参数
-PLAYSEEK_PARAM = "?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}"
+PLAYSEEK_PARAM = os.getenv("IPTV_PLAYSEEK_PARAM", "?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}")
 
 def get_online_data():
     """从 API 获取 JSON 数据并转换格式"""

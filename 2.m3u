@@ -1642,3 +1642,5 @@ http://192.168.10.1:10000/rtp/239.94.1.69:5140
 http://192.168.10.1:10000/rtp/239.94.1.70:5140
 #EXTINF:-1 tvg-name="CCTV-4K画中画-全网组播" group-title="卫视" catchup-source="rtsp://182.139.234.40/PLTV/89888988/224/3221228839/763897642.smil?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-4K画中画-全网组播
 http://192.168.10.1:10000/rtp/239.94.2.163:5140
+#EXTINF:-1 tvg-name="多彩文体4K" group-title="卫视" catchup-source="rtsp://182.139.234.40/PLTV/446/224/3221228675/735169480.smil?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",多彩文体4K
+http://192.168.10.1:10000/rtp/239.94.1.176:5140

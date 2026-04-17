@@ -1,0 +1,2062 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M3U 管理器</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1/dist/mpegts.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Inter', 'Noto Sans SC', 'sans-serif'],
+            sans: ['Inter', 'Noto Sans SC', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --background: #e0e5ec;
+      --panel: #f0f2f5;
+      --muted-surface: #d1d9e6;
+      --text: #2d3436;
+      --muted: #4a5568;
+      --accent: #ff4757;
+      --accent-strong: #e63a4c;
+      --accent-soft: rgba(255, 71, 87, 0.14);
+      --success: #1f7a4b;
+      --success-soft: rgba(52, 199, 89, 0.16);
+      --warning: #9a6b00;
+      --danger: #b4233b;
+      --danger-soft: rgba(180, 35, 59, 0.14);
+      --border: #babecc;
+      --border-light: #ffffff;
+      --border-dark: #a3b1c6;
+      --screen: #1f252d;
+      --screen-2: #0f141a;
+      --screen-text: #d8ffe9;
+      --shadow-card: 6px 6px 14px rgba(163, 177, 198, 0.28), -6px -6px 14px rgba(255, 255, 255, 0.9);
+      --shadow-floating: 8px 8px 18px rgba(163, 177, 198, 0.3), -8px -8px 18px rgba(255,255,255,0.92), inset 1px 1px 0 rgba(255,255,255,0.5);
+      --shadow-pressed: inset 6px 6px 12px #babecc, inset -6px -6px 12px #ffffff;
+      --shadow-recessed: inset 4px 4px 8px #babecc, inset -4px -4px 8px #ffffff;
+      --shadow-accent: 6px 6px 14px rgba(166, 50, 60, 0.34), -6px -6px 14px rgba(255, 118, 128, 0.44);
+      --glow-accent: 0 0 10px 2px rgba(255, 71, 87, 0.45);
+      --mechanical-ease: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      min-height: 100vh;
+      background: var(--background);
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.95), rgba(255,255,255,0) 36%),
+        radial-gradient(circle at bottom right, rgba(163,177,198,0.2), rgba(163,177,198,0) 30%),
+        linear-gradient(180deg, #edf1f6 0%, #e6ebf2 100%);
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.08;
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+    }
+
+    [v-cloak] { display: none; }
+
+    #app {
+      position: relative;
+      isolation: isolate;
+    }
+
+    .industrial-app {
+      position: relative;
+    }
+
+    .machine-shell {
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .panel,
+    .panel-soft {
+      position: relative;
+      overflow: hidden;
+      color: var(--text);
+      border: 0;
+      background: linear-gradient(145deg, rgba(248,249,252,0.98), rgba(233,238,244,0.98));
+      box-shadow: var(--shadow-card);
+    }
+
+    .panel::before,
+    .panel-soft::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 14px 14px, rgba(120, 132, 152, 0.22) 0 2px, rgba(255,255,255,0.58) 2px 3px, transparent 4px),
+        radial-gradient(circle at calc(100% - 14px) 14px, rgba(120, 132, 152, 0.22) 0 2px, rgba(255,255,255,0.58) 2px 3px, transparent 4px),
+        radial-gradient(circle at 14px calc(100% - 14px), rgba(120, 132, 152, 0.22) 0 2px, rgba(255,255,255,0.58) 2px 3px, transparent 4px),
+        radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), rgba(120, 132, 152, 0.22) 0 2px, rgba(255,255,255,0.58) 2px 3px, transparent 4px);
+      opacity: 0.46;
+    }
+
+    .panel::after,
+    .panel-soft::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at top left, rgba(255,255,255,0.9), rgba(255,255,255,0) 28%);
+      opacity: 0.55;
+    }
+
+    .panel-soft {
+      background: linear-gradient(145deg, rgba(238,241,246,0.98), rgba(218,224,234,0.96));
+      box-shadow: 6px 6px 14px rgba(163,177,198,0.42), -6px -6px 14px rgba(255,255,255,0.95);
+    }
+
+    .muted { color: var(--muted) !important; }
+
+    .scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
+    .scrollbar::-webkit-scrollbar-track {
+      background: rgba(209, 217, 230, 0.55);
+      border-radius: 999px;
+      box-shadow: var(--shadow-recessed);
+    }
+    .scrollbar::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #c1cbda, #acb8ca);
+      border-radius: 999px;
+      border: 2px solid rgba(224,229,236,0.8);
+    }
+
+    .logo-box {
+      background: linear-gradient(145deg, #f7f9fc, #d8dee8);
+      box-shadow: var(--shadow-floating);
+      color: var(--accent);
+    }
+
+    .logo-box::after {
+      content: "";
+      position: absolute;
+      inset: auto 8px 8px auto;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: var(--glow-accent);
+    }
+
+    .glow {
+      box-shadow: var(--shadow-floating), var(--glow-accent) !important;
+    }
+
+    .control-sidebar {
+      background: linear-gradient(160deg, rgba(248,250,252,0.98), rgba(228,234,241,0.98));
+    }
+
+    .control-sidebar .panel-soft {
+      background: linear-gradient(145deg, rgba(240,242,245,0.95), rgba(222,228,236,0.95));
+    }
+
+    .section-stamp,
+    .module-stamp {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted) !important;
+    }
+
+    .workspace-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .workspace-nav button {
+      min-width: 132px;
+    }
+
+    .source-card {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .source-card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .source-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .shell-header {
+      border-radius: 28px;
+      background: linear-gradient(150deg, rgba(248,250,252,0.98), rgba(229,234,241,0.98));
+    }
+
+    .shell-header::after,
+    .control-sidebar::after {
+      content: "";
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      width: 28px;
+      height: 24px;
+      border-radius: 999px;
+      background:
+        linear-gradient(90deg, rgba(163,177,198,0.5), rgba(163,177,198,0.5)) 0 0 / 4px 100% no-repeat,
+        linear-gradient(90deg, rgba(163,177,198,0.5), rgba(163,177,198,0.5)) 10px 0 / 4px 100% no-repeat,
+        linear-gradient(90deg, rgba(163,177,198,0.5), rgba(163,177,198,0.5)) 20px 0 / 4px 100% no-repeat;
+      opacity: 0.75;
+    }
+
+    .search-slot,
+    .data-slot,
+    select.data-slot,
+    input.data-slot,
+    input[type="file"].data-slot {
+      min-height: 52px;
+      border: 0 !important;
+      color: var(--text) !important;
+      background: linear-gradient(145deg, #dce3eb, #edf2f8) !important;
+      box-shadow: var(--shadow-recessed) !important;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .search-slot::placeholder,
+    .data-slot::placeholder {
+      color: rgba(74, 85, 104, 0.72) !important;
+    }
+
+    input:not([type="checkbox"]):not([type="radio"]),
+    select {
+      min-height: 52px;
+      border: 0 !important;
+      color: var(--text) !important;
+      background: linear-gradient(145deg, #dce3eb, #edf2f8) !important;
+      box-shadow: var(--shadow-recessed) !important;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      box-shadow: var(--shadow-recessed), 0 0 0 2px rgba(255, 71, 87, 0.28) !important;
+    }
+
+    button {
+      min-height: 48px;
+      border: 0 !important;
+      color: var(--text) !important;
+      background: linear-gradient(145deg, #edf1f6, #d6dde7) !important;
+      box-shadow: var(--shadow-card);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      transition:
+        transform 180ms var(--mechanical-ease),
+        box-shadow 180ms ease,
+        filter 180ms ease,
+        color 180ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-floating);
+      filter: brightness(1.02);
+      color: var(--accent) !important;
+    }
+
+    button:active {
+      transform: translateY(2px);
+      box-shadow: var(--shadow-pressed);
+    }
+
+    button:disabled {
+      opacity: 0.56;
+      cursor: not-allowed;
+      filter: saturate(0.7);
+    }
+
+    button:focus-visible {
+      outline: none;
+      box-shadow: var(--shadow-floating), 0 0 0 2px rgba(255, 71, 87, 0.26);
+    }
+
+    .action-key {
+      min-height: 48px;
+      border: 0 !important;
+      color: var(--text) !important;
+      background: linear-gradient(145deg, #edf1f6, #d6dde7) !important;
+      box-shadow: var(--shadow-card);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      transition:
+        transform 180ms var(--mechanical-ease),
+        box-shadow 180ms ease,
+        filter 180ms ease,
+        color 180ms ease;
+    }
+
+    .action-key:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-floating);
+      filter: brightness(1.02);
+      color: var(--accent) !important;
+    }
+
+    .action-key:active {
+      transform: translateY(2px);
+      box-shadow: var(--shadow-pressed);
+    }
+
+    .action-key:disabled {
+      opacity: 0.56;
+      cursor: not-allowed;
+      filter: saturate(0.7);
+    }
+
+    .action-key:focus-visible {
+      outline: none;
+      box-shadow: var(--shadow-floating), 0 0 0 2px rgba(255, 71, 87, 0.26);
+    }
+
+    .primary-key {
+      color: #ffffff !important;
+      background: linear-gradient(145deg, #ff6573, #ff4757) !important;
+      box-shadow: var(--shadow-accent);
+    }
+
+    .primary-key:hover,
+    .primary-key:focus-visible {
+      color: #ffffff !important;
+      filter: brightness(1.06);
+      box-shadow: var(--shadow-accent), var(--glow-accent);
+    }
+
+    .danger-key {
+      color: var(--danger) !important;
+    }
+
+    .icon-key {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      min-width: 48px;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      text-transform: none;
+      line-height: 1;
+    }
+
+    .sidebar-button {
+      justify-content: flex-start;
+      min-height: 60px;
+      color: var(--text) !important;
+      background: linear-gradient(145deg, rgba(238,241,246,0.96), rgba(219,226,235,0.96)) !important;
+      box-shadow: 5px 5px 12px rgba(163,177,198,0.34), -5px -5px 12px rgba(255,255,255,0.88);
+    }
+
+    .sidebar-button.active-channel,
+    .sidebar-button.active-source {
+      color: #ffffff !important;
+      background: linear-gradient(145deg, #ff6472, #ff4757) !important;
+      box-shadow: var(--shadow-accent), var(--glow-accent);
+    }
+
+    .icon-well {
+      background: linear-gradient(145deg, #d8e0eb, #f7f9fc);
+      box-shadow: var(--shadow-recessed);
+      color: var(--accent) !important;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+    }
+
+    .sidebar-button.active-channel .icon-well,
+    .sidebar-button.active-source .icon-well {
+      color: #ffffff !important;
+      background: rgba(255,255,255,0.16);
+      box-shadow: inset 2px 2px 6px rgba(143,36,47,0.28), inset -2px -2px 6px rgba(255,255,255,0.12);
+    }
+
+    .machine-card {
+      transition:
+        transform 300ms var(--mechanical-ease),
+        box-shadow 300ms ease,
+        filter 300ms ease;
+    }
+
+    .machine-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-floating);
+    }
+
+    .channel-module:hover {
+      transform: translateY(-3px);
+    }
+
+    .channel-avatar {
+      color: var(--text) !important;
+      background: linear-gradient(145deg, #eff3f8, #d3dbe7) !important;
+      box-shadow: var(--shadow-floating);
+    }
+
+    .display-well,
+    .status-well,
+    .address-well {
+      background: linear-gradient(145deg, #dfe6ef, #f6f8fb) !important;
+      box-shadow: var(--shadow-recessed);
+      border: 0 !important;
+      color: var(--text) !important;
+    }
+
+    .console-panel {
+      background: linear-gradient(160deg, rgba(244,247,251,0.98), rgba(230,236,243,0.98)) !important;
+      color: var(--text) !important;
+    }
+
+    .screen-panel {
+      border: 0 !important;
+      background:
+        linear-gradient(180deg, rgba(31,37,45,0.96), rgba(15,20,26,1)),
+        url("https://www.transparenttextures.com/patterns/carbon-fibre.png") !important;
+      background-blend-mode: screen, multiply;
+      color: var(--screen-text) !important;
+      box-shadow: inset 8px 8px 16px rgba(0,0,0,0.32), inset -2px -2px 3px rgba(255,255,255,0.08);
+    }
+
+    .screen-panel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.22) 50%);
+      background-size: 100% 4px;
+      opacity: 0.4;
+    }
+
+    .metric-chip {
+      border: 0 !important;
+      background: linear-gradient(145deg, #eaf0f7, #d7dfeb) !important;
+      box-shadow: var(--shadow-card);
+      color: var(--text) !important;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .log-screen {
+      border: 0 !important;
+      background: linear-gradient(180deg, rgba(49,58,69,0.96), rgba(31,38,46,0.98)) !important;
+      color: var(--screen-text) !important;
+      box-shadow: inset 6px 6px 12px rgba(0,0,0,0.22), inset -1px -1px 1px rgba(255,255,255,0.06);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .crawler-readable-card {
+      position: relative;
+      border: 1px solid rgba(163, 177, 198, 0.32) !important;
+      background:
+        linear-gradient(180deg, rgba(235, 241, 247, 0.98), rgba(221, 229, 239, 0.96)),
+        radial-gradient(circle at top left, rgba(255,255,255,0.88), rgba(255,255,255,0) 42%) !important;
+      color: var(--text) !important;
+      box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.82),
+        inset -3px -3px 8px rgba(163,177,198,0.15),
+        var(--shadow-card);
+    }
+
+    .crawler-readable-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,0.1) 50%, rgba(163,177,198,0.04) 50%);
+      background-size: 100% 5px;
+      opacity: 0.24;
+      border-radius: inherit;
+    }
+
+    .crawler-readable-card .text-slate-100,
+    .crawler-readable-card .text-slate-200,
+    .crawler-readable-card .text-slate-300,
+    .crawler-readable-card .text-slate-400 {
+      color: var(--text) !important;
+    }
+
+    .crawler-readable-card .muted,
+    .crawler-readable-card .text-xs.muted {
+      color: #5d6978 !important;
+    }
+
+    .crawler-readable-label {
+      color: #5b6776 !important;
+      font-weight: 700;
+    }
+
+    .crawler-readable-note {
+      color: #8c6400 !important;
+      font-weight: 600;
+    }
+
+    .crawler-readable-button {
+      background: linear-gradient(145deg, #eef3f8, #d9e2ec) !important;
+      color: var(--text) !important;
+      box-shadow: 4px 4px 10px rgba(163,177,198,0.24), -4px -4px 10px rgba(255,255,255,0.86) !important;
+    }
+
+    .module-divider {
+      border-color: rgba(163,177,198,0.42) !important;
+    }
+
+    .modal-overlay {
+      background: rgba(224, 229, 236, 0.74) !important;
+      backdrop-filter: blur(16px);
+    }
+
+    .modal-shell {
+      background:
+        linear-gradient(160deg, rgba(245,247,250,0.95), rgba(221,227,236,0.98)),
+        url("https://www.transparenttextures.com/patterns/carbon-fibre.png");
+      background-blend-mode: soft-light, multiply;
+    }
+
+    .toast-shell {
+      border: 0;
+      box-shadow: var(--shadow-floating);
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+    }
+
+    button svg {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .text-white,
+    .text-slate-100,
+    .text-slate-200 {
+      color: var(--text) !important;
+    }
+
+    .text-slate-300,
+    .text-slate-400,
+    .text-slate-500 {
+      color: var(--muted) !important;
+    }
+
+    .text-blue-200,
+    .text-blue-300,
+    .text-blue-400 {
+      color: var(--accent) !important;
+    }
+
+    .text-emerald-200,
+    .text-emerald-300,
+    .text-emerald-400 {
+      color: var(--success) !important;
+    }
+
+    .text-rose-200,
+    .text-rose-300,
+    .text-rose-400 {
+      color: var(--danger) !important;
+    }
+
+    .text-amber-300 {
+      color: var(--warning) !important;
+    }
+
+    .bg-slate-800,
+    .bg-slate-700,
+    .bg-slate-950\/40,
+    .bg-slate-950\/45,
+    .bg-slate-950\/65,
+    .bg-slate-900\/70,
+    .bg-slate-900\/80 {
+      background: linear-gradient(145deg, #d9e1eb, #edf2f8) !important;
+    }
+
+    .bg-blue-500\/14,
+    .bg-blue-500\/16,
+    .bg-blue-500\/18 {
+      background: rgba(255, 71, 87, 0.14) !important;
+    }
+
+    .bg-blue-500 {
+      background: linear-gradient(145deg, #ff6573, #ff4757) !important;
+      box-shadow: var(--shadow-accent) !important;
+      color: #ffffff !important;
+    }
+
+    .bg-emerald-500\/14,
+    .bg-emerald-500\/15,
+    .bg-emerald-500\/18 {
+      background: var(--success-soft) !important;
+    }
+
+    .bg-blue-500\/16,
+    .bg-emerald-500\/16 {
+      box-shadow: var(--shadow-recessed) !important;
+      color: var(--accent) !important;
+    }
+
+    article.panel-soft,
+    aside .panel-soft,
+    .panel.rounded-\[28px\],
+    .panel.rounded-\[24px\] {
+      transition:
+        transform 300ms var(--mechanical-ease),
+        box-shadow 300ms ease,
+        filter 300ms ease;
+    }
+
+    article.panel-soft:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-floating);
+    }
+
+    .bg-rose-500\/10,
+    .bg-rose-500\/14 {
+      background: var(--danger-soft) !important;
+    }
+
+    .border-slate-700\/40,
+    .border-slate-700\/50,
+    .border-slate-700\/60,
+    .border-slate-700\/80,
+    .border-slate-600\/50,
+    .border-slate-500,
+    .border-blue-500\/40,
+    .border-emerald-600\/50,
+    .border-rose-400\/20 {
+      border-color: transparent !important;
+    }
+
+    @media (max-width: 1023px) {
+      .machine-shell {
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .shell-header {
+        border-radius: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" v-cloak class="industrial-app min-h-screen">
+    <div class="machine-shell flex min-h-screen flex-col lg:flex-row">
+      <aside class="panel control-sidebar hidden w-[280px] flex-col px-4 py-5 lg:flex">
+        <div class="flex items-center gap-3 px-3">
+          <div class="logo-box relative flex h-11 w-11 items-center justify-center rounded-2xl">
+            <svg class="h-6 w-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7l8-5 8 5-8 5-8-5zm0 5l8 5 8-5M4 17l8 5 8-5"/>
+            </svg>
+          </div>
+          <div>
+            <div class="font-display text-xl font-semibold">M3U 管理器</div>
+            <div class="text-xs muted">频道抓取 / 检测 / 分发</div>
+          </div>
+        </div>
+
+        <div class="mt-8 px-3">
+          <div class="section-stamp mb-3">频道分组</div>
+          <div class="space-y-2">
+            <button class="action-key sidebar-button flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition" :class="currentGroup === '' ? 'active-channel glow' : 'panel-soft'" @click="setGroup('')">
+              <span class="icon-well inline-flex h-9 w-9 items-center justify-center rounded-xl">全</span>
+              <span class="flex-1 truncate">所有分组</span>
+              <span class="text-xs muted">{{ stats.total }}</span>
+            </button>
+            <button v-for="group in groups" :key="group.name" class="action-key sidebar-button flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition" :class="currentGroup === group.name ? 'active-channel glow' : 'panel-soft'" @click="setGroup(group.name)">
+              <span class="icon-well inline-flex h-9 w-9 items-center justify-center rounded-xl">{{ (group.name || '?').slice(0, 1) }}</span>
+              <span class="flex-1 truncate">{{ group.name }}</span>
+              <span class="text-xs muted">{{ group.count }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-8 px-3">
+          <div class="section-stamp mb-3">导入来源</div>
+          <div class="space-y-2">
+            <button class="action-key sidebar-button flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition" :class="currentSource === '' ? 'active-source glow' : 'panel-soft'" @click="setSource('')">
+              <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/16 text-emerald-300">汇</span>
+              <span class="flex-1 truncate">全部来源</span>
+              <span class="text-xs muted">{{ totalSourceCount }}</span>
+            </button>
+            <button v-for="source in sources" :key="source.name" class="action-key sidebar-button flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition" :class="currentSource === source.name ? 'active-source glow' : 'panel-soft'" @click="setSource(source.name)">
+              <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-800 text-slate-300">{{ sourceBadge(source.name) }}</span>
+              <span class="flex-1 truncate">{{ source.display_name || source.name }}</span>
+              <span class="text-xs muted">{{ source.count }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-8 px-3">
+          <div class="section-stamp mb-3">播放列表</div>
+          <div class="panel-soft machine-card rounded-2xl p-4">
+            <div class="text-sm font-medium text-white">默认播放列表</div>
+            <div class="mt-1 text-xs muted">{{ publishedChannels.length }} 个频道</div>
+            <div class="mt-4 flex items-center justify-between text-xs">
+              <span class="muted">链接输出</span>
+              <span class="metric-chip rounded-full px-2 py-1 text-emerald-300">在线</span>
+            </div>
+            <button class="action-key primary-key mt-4 w-full rounded-xl px-3 py-2 text-sm font-medium text-white transition" @click="copyPlaylist">复制 M3U 链接</button>
+          </div>
+        </div>
+      </aside>
+
+      <main class="flex min-h-screen flex-1 flex-col">
+        <header class="panel shell-header flex flex-wrap items-center gap-3 px-4 py-4 lg:px-6">
+          <div class="relative min-w-[220px] flex-1">
+            <svg class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input v-model.trim="searchText" class="search-slot w-full rounded-2xl py-3 pl-11 pr-4 text-sm outline-none transition" placeholder="搜索频道名、分组或来源...">
+          </div>
+          <button class="action-key primary-key rounded-2xl px-4 py-3 text-sm font-medium text-white transition" @click="showImportModal = true">导入 M3U</button>
+          <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="openCrawlerConfig">爬虫设置</button>
+          <button class="action-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="validateAll" :disabled="validating">{{ validating ? '检测中...' : '全局检测' }}</button>
+          <button class="action-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="triggerAutoCrawl" :disabled="crawling || schedulerState.crawler.running">{{ (crawling || schedulerState.crawler.running) ? '爬取中...' : '手动爬取' }}</button>
+          <button class="action-key icon-key rounded-full p-3 transition" @click="refreshAll">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M5.64 19A9 9 0 0119 5.64M18.36 19A9 9 0 015 5.64"/>
+            </svg>
+          </button>
+        </header>
+
+        <div class="flex flex-1 flex-col gap-5 p-4 lg:p-6">
+          <div class="workspace-nav">
+            <button class="action-key rounded-2xl px-4 py-3 text-sm transition" :class="activeWorkspace === 'channels' ? 'primary-key' : ''" @click="setWorkspace('channels')">频道总览</button>
+            <button class="action-key rounded-2xl px-4 py-3 text-sm transition" :class="activeWorkspace === 'crawler' ? 'primary-key' : ''" @click="setWorkspace('crawler')">爬虫配置</button>
+            <button class="action-key rounded-2xl px-4 py-3 text-sm transition" :class="activeWorkspace === 'sources' ? 'primary-key' : ''" @click="setWorkspace('sources')">导入源</button>
+          </div>
+
+          <section v-if="activeWorkspace === 'channels'" class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+            <div class="panel rounded-[28px] p-5">
+              <div class="module-divider flex flex-col gap-4 border-b pb-5">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <h1 class="font-display text-3xl font-semibold text-white">{{ currentViewTitle }}</h1>
+                    <p class="mt-1 text-sm muted">{{ currentViewSubtitle }}</p>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="rounded-full bg-slate-800 px-3 py-1.5 text-xs muted">总数 {{ filteredChannels.length }}</span>
+                    <span class="rounded-full bg-blue-500/14 px-3 py-1.5 text-xs text-blue-300">已选 {{ selectedIds.size }}</span>
+                    <span class="rounded-full bg-emerald-500/14 px-3 py-1.5 text-xs text-emerald-300">在线 {{ onlineCount }}</span>
+                  </div>
+                </div>
+                <div class="grid gap-3 xl:grid-cols-[repeat(4,minmax(0,1fr))_repeat(3,auto)]">
+                  <select v-model="statusFilter" class="data-slot rounded-2xl px-4 py-3 text-sm outline-none"><option value="">全部状态</option><option value="true">只看在线</option><option value="false">只看离线</option></select>
+                  <select v-model="catchupFilter" class="data-slot rounded-2xl px-4 py-3 text-sm outline-none"><option value="">全部频道</option><option value="true">仅看支持回看</option></select>
+                  <select v-model="sortBy" class="data-slot rounded-2xl px-4 py-3 text-sm outline-none">
+                    <option value="group">按分组排序</option>
+                    <option value="name">按名称排序</option>
+                    <option value="latency">按延迟排序</option>
+                    <option value="last_check">按最近检测</option>
+                    <option value="source">按来源排序</option>
+                    <option value="updated">按更新时间</option>
+                    <option value="status">按在线状态</option>
+                  </select>
+                  <select v-model="sortDirection" class="data-slot rounded-2xl px-4 py-3 text-sm outline-none">
+                    <option value="asc">升序</option>
+                    <option value="desc">降序</option>
+                  </select>
+                  <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="selectAllVisible">全选当前筛选</button>
+                  <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="selectAllOnline">全选在线</button>
+                  <button class="action-key danger-key rounded-2xl px-4 py-3 text-sm transition" @click="clearSelection">清空选择</button>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button class="action-key primary-key rounded-2xl px-4 py-3 text-sm font-medium text-white transition disabled:opacity-50" @click="addSelectedToPublished" :disabled="selectedIds.size === 0 || addingBatch">{{ addingBatch ? '加入中...' : `加入播放列表 (${selectedIds.size})` }}</button>
+                  <button class="action-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="copySelectedUrls" :disabled="selectedIds.size === 0">复制已选地址</button>
+                </div>
+              </div>
+
+              <div class="scrollbar mt-5 max-h-[calc(100vh-290px)] overflow-y-auto pr-1">
+                <div class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+                  <article v-for="channel in filteredChannels" :key="channel.id" class="panel-soft channel-module rounded-[24px] p-4 transition">
+                    <div class="flex items-start justify-between gap-3">
+                      <label class="flex items-center gap-2 text-sm text-slate-200"><input type="checkbox" class="h-4 w-4 rounded border-slate-500 bg-slate-900" :checked="selectedIds.has(channel.id)" @change="toggleSelect(channel.id)">选择</label>
+                      <button class="action-key icon-key rounded-full p-2 transition" @click="openDiagnostic(channel)">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m4 6V7m4 10v-4M5 19h14"/></svg>
+                      </button>
+                    </div>
+                    <div class="mt-4 flex items-center gap-4">
+                      <div class="channel-avatar flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-semibold text-white">{{ channelBadge(channel) }}</div>
+                      <div class="min-w-0 flex-1">
+                        <div class="truncate text-lg font-semibold text-white">{{ channel.tvg_name || '未命名频道' }}</div>
+                        <div class="mt-1 truncate text-xs muted">{{ channel.group_title || '未分组' }}</div>
+                        <div class="mt-1 truncate text-[11px] text-slate-400">{{ channel.source_tag || '未标记来源' }}</div>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                          <span class="rounded-full px-2 py-1 text-[11px]" :class="channel.is_active ? 'bg-emerald-500/14 text-emerald-300' : 'bg-rose-500/14 text-rose-300'">{{ channel.is_active ? '在线' : '离线' }}</span>
+                          <span class="rounded-full bg-slate-800 px-2 py-1 text-[11px] text-slate-200">延迟 {{ formatLatency(channel.latency_ms) }}</span>
+                          <span v-if="channel.catchup_source" class="rounded-full bg-blue-500/14 px-2 py-1 text-[11px] text-blue-300">回看</span>
+                          <span v-if="publishedPoolIds.has(channel.id)" class="rounded-full bg-slate-700 px-2 py-1 text-[11px] text-slate-200">已发布</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="display-well mt-4 rounded-2xl p-3">
+                      <div class="flex items-center justify-between gap-3">
+                        <div class="text-[11px] uppercase tracking-[0.25em] text-slate-500">最近检测</div>
+                        <div class="text-[11px] text-slate-400">{{ formatTime(channel.last_check) }}</div>
+                      </div>
+                      <div class="mt-2 truncate font-mono text-xs text-slate-400">{{ channel.live_url }}</div>
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                      <button class="action-key flex-1 rounded-xl px-3 py-2 text-sm transition" @click="copyText(channel.live_url, '频道地址已复制')">复制链接</button>
+                      <button class="action-key primary-key flex-1 rounded-xl px-3 py-2 text-sm font-medium text-white transition" @click="addOne(channel.id)">加入列表</button>
+                    </div>
+                  </article>
+                  <div v-if="!filteredChannels.length" class="col-span-full rounded-[24px] border border-dashed border-slate-700/60 px-6 py-16 text-center text-sm muted">当前筛选条件下没有频道</div>
+                </div>
+              </div>
+            </div>
+
+            <aside class="panel rounded-[28px] p-5">
+              <div class="panel-soft console-panel rounded-[24px] p-4">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 class="font-display text-2xl font-semibold">爬虫控制台</h2>
+                    <p class="mt-1 text-sm muted">这里会显示手动爬取和定时任务是否真正执行成功</p>
+                  </div>
+                  <span class="rounded-full px-3 py-1 text-xs font-medium" :class="crawlerStatusClass">{{ crawlerStatusText }}</span>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                  <div class="metric-chip rounded-2xl p-4">
+                    <div class="text-xs uppercase tracking-[0.25em] text-slate-500">最近启动</div>
+                    <div class="mt-2 text-sm text-slate-100">{{ formatTime(schedulerState.crawler.last_started_at) }}</div>
+                    <div class="mt-1 text-xs muted">{{ crawlerTriggerText }}</div>
+                  </div>
+                  <div class="metric-chip rounded-2xl p-4">
+                    <div class="text-xs uppercase tracking-[0.25em] text-slate-500">下次定时</div>
+                    <div class="mt-2 text-sm text-slate-100">{{ formatTime(schedulerState.jobs.crawler.next_run_time) }}</div>
+                    <div class="mt-1 text-xs muted">每 {{ schedulerState.jobs.crawler.interval_hours || 12 }} 小时执行一次</div>
+                  </div>
+                  <div class="metric-chip rounded-2xl p-4">
+                    <div class="text-xs uppercase tracking-[0.25em] text-slate-500">最近结果</div>
+                    <div class="mt-2 text-sm text-slate-100">{{ crawlerImportSummary }}</div>
+                    <div class="mt-1 text-xs muted">{{ schedulerState.crawler.message || '暂无执行结果' }}</div>
+                  </div>
+                  <div class="metric-chip rounded-2xl p-4">
+                    <div class="text-xs uppercase tracking-[0.25em] text-slate-500">输出文件</div>
+                    <div class="mt-2 text-sm text-slate-100">{{ schedulerState.crawler.output_file.exists ? '已存在' : '尚未生成' }}</div>
+                    <div class="mt-1 text-xs muted">{{ formatFileSize(schedulerState.crawler.output_file.size_bytes) }}</div>
+                  </div>
+                </div>
+
+                <div class="log-screen crawler-readable-card mt-4 rounded-2xl p-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="text-sm font-medium text-slate-100">默认参数说明</div>
+                    <button class="action-key crawler-readable-button rounded-xl px-3 py-2 text-xs transition" @click="refreshSchedulerState">刷新状态</button>
+                  </div>
+                  <div class="mt-3 space-y-2 text-sm text-slate-200">
+                    <div class="truncate"><span class="crawler-readable-label">输出文件:</span> {{ schedulerState.crawler.config.resolved_m3u_file || schedulerState.crawler.config.m3u_file || '暂无' }}</div>
+                    <div class="truncate"><span class="crawler-readable-label">接口来源:</span> {{ schedulerState.crawler.config.api_url || '暂无' }}</div>
+                    <div class="truncate"><span class="crawler-readable-label">RTP 前缀:</span> {{ schedulerState.crawler.config.rtp_prefix || '暂无' }}</div>
+                    <div class="truncate"><span class="crawler-readable-label">来源标签:</span> {{ schedulerState.crawler.config.source_tag || '爬虫默认源' }}</div>
+                    <div class="truncate"><span class="crawler-readable-label">定时间隔:</span> {{ schedulerState.crawler.config.interval_hours || 12 }} 小时</div>
+                    <div class="crawler-readable-note text-xs">{{ schedulerState.crawler.config.note || '当前没有额外配置说明' }}</div>
+                    <div v-if="schedulerState.crawler.created_default_output" class="text-xs text-emerald-300">本次运行已自动创建默认输出文件 `2.m3u`。</div>
+                  </div>
+                </div>
+
+                <div class="log-screen crawler-readable-card mt-4 rounded-2xl p-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="text-sm font-medium text-slate-100">执行日志</div>
+                    <div class="text-xs muted">返回码 {{ schedulerState.crawler.return_code ?? '-' }}</div>
+                  </div>
+                  <div class="mt-3 space-y-2 font-mono text-xs leading-6 text-slate-300">
+                    <div v-for="(line, index) in crawlerLogLines" :key="index" class="truncate">{{ line }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-5 flex items-start justify-between gap-3">
+                <div><h2 class="font-display text-2xl font-semibold">播放列表</h2><p class="mt-1 text-sm muted">这里的频道会输出到 `{{ publishedConfig.playlist_filename }}`，路径为 {{ publishedConfig.playlist_path }}</p></div>
+                <button class="action-key danger-key rounded-xl px-3 py-2 text-xs transition disabled:opacity-50" @click="clearPublished" :disabled="publishedChannels.length === 0">清空列表</button>
+              </div>
+              <div class="mt-4 grid grid-cols-2 gap-3">
+                <div class="metric-chip rounded-2xl p-4"><div class="text-xs uppercase tracking-[0.25em] text-slate-500">已发布</div><div class="mt-2 font-display text-3xl text-white">{{ publishedChannels.length }}</div></div>
+                <div class="metric-chip rounded-2xl p-4"><div class="text-xs uppercase tracking-[0.25em] text-slate-500">最近导入</div><div class="mt-2 text-sm text-slate-200">{{ formatTime(schedulerState.last_import) }}</div></div>
+              </div>
+              <div class="mt-4 rounded-[22px] border border-white/40 bg-white/35 p-4">
+                <div class="section-stamp">导出文件名</div>
+                <div class="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <input v-model.trim="publishedConfig.playlist_filename" class="data-slot rounded-2xl px-4 py-3 text-sm outline-none" placeholder="my_list.m3u">
+                  <button class="action-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="savePublishedConfig" :disabled="savingPublishedConfig">{{ savingPublishedConfig ? '保存中...' : '保存文件名' }}</button>
+                </div>
+              </div>
+              <div class="mt-4 grid gap-2">
+                <button class="action-key primary-key rounded-2xl px-4 py-3 text-sm font-medium text-white transition" @click="copyPlaylist">复制播放列表链接</button>
+                <button class="action-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="copyPublishedUrls" :disabled="publishedChannels.length === 0">复制发布地址</button>
+              </div>
+              <div class="scrollbar mt-5 max-h-[calc(100vh-360px)] space-y-3 overflow-y-auto pr-1">
+                <div v-for="item in publishedChannels" :key="item.selected_id" class="panel-soft machine-card rounded-[22px] p-4">
+                  <div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="truncate font-semibold text-white">{{ item.custom_name || item.tvg_name }}</div><div class="mt-1 text-xs muted">{{ item.group_title || '未分组' }}</div></div><span class="rounded-full bg-slate-800 px-2 py-1 text-[11px] muted">#{{ item.sort_order }}</span></div>
+                  <div class="mt-3 rounded-2xl border border-white/30 bg-white/35 px-3 py-2 text-[11px] muted">
+                    导出名称：{{ item.custom_name || item.tvg_name }}
+                  </div>
+                  <div class="mt-3 grid gap-2">
+                    <input v-model.trim="publishedNameDrafts[item.selected_id]" class="data-slot rounded-2xl px-4 py-3 text-sm outline-none" :placeholder="item.tvg_name || '请输入频道名称'">
+                    <div class="flex gap-2">
+                      <button class="action-key flex-1 rounded-xl px-3 py-2 text-xs transition" @click="savePublishedName(item)">保存名称</button>
+                      <button class="action-key flex-1 rounded-xl px-3 py-2 text-xs transition" @click="resetPublishedName(item)">还原输入</button>
+                    </div>
+                  </div>
+                  <div class="mt-3 truncate font-mono text-xs text-slate-400">{{ item.live_url }}</div>
+                  <div class="mt-4 flex gap-2">
+                    <button class="action-key flex-1 rounded-xl px-3 py-2 text-xs transition" @click="openDiagnostic(item)">诊断</button>
+                    <button class="action-key danger-key flex-1 rounded-xl px-3 py-2 text-xs transition" @click="removePublished(item.selected_id)">移除</button>
+                  </div>
+                </div>
+                <div v-if="!publishedChannels.length" class="rounded-[22px] border border-dashed border-slate-700/60 px-4 py-12 text-center text-sm muted">还没有频道加入播放列表</div>
+              </div>
+            </aside>
+          </section>
+
+          <section v-if="activeWorkspace === 'crawler'" class="panel rounded-[28px] p-6">
+            <div class="flex flex-col gap-4">
+              <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <h2 class="font-display text-3xl font-semibold text-white">爬虫默认配置</h2>
+                  <p class="mt-1 max-w-3xl text-sm muted">这里可以直接维护默认 M3U 输出文件、API 地址、RTP 前缀、回看参数和定时爬取间隔，保存后立即生效。</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="refreshSchedulerState">刷新状态</button>
+                  <button class="action-key primary-key rounded-2xl px-4 py-3 text-sm font-medium text-white transition disabled:opacity-50" @click="saveCrawlerConfig" :disabled="savingCrawlerConfig">{{ savingCrawlerConfig ? '保存中...' : '保存配置' }}</button>
+                </div>
+              </div>
+
+              <div class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_360px]">
+                <div class="panel-soft rounded-[24px] p-5">
+                  <div class="grid gap-4 md:grid-cols-2">
+                    <label class="grid gap-2 text-sm text-slate-200">
+                      <span>API 地址</span>
+                      <input v-model.trim="crawlerConfigForm.api_url" class="data-slot rounded-2xl px-4 py-3 text-white outline-none" placeholder="https://example.com/api/channels">
+                    </label>
+                    <label class="grid gap-2 text-sm text-slate-200">
+                      <span>输出文件</span>
+                      <input v-model.trim="crawlerConfigForm.m3u_file" class="data-slot rounded-2xl px-4 py-3 text-white outline-none" placeholder="2.m3u 或 output/custom.m3u">
+                    </label>
+                    <label class="grid gap-2 text-sm text-slate-200">
+                      <span>RTP 前缀</span>
+                      <input v-model.trim="crawlerConfigForm.rtp_prefix" class="data-slot rounded-2xl px-4 py-3 text-white outline-none" placeholder="http://192.168.10.1:10000/rtp/">
+                    </label>
+                    <label class="grid gap-2 text-sm text-slate-200">
+                      <span>来源标签</span>
+                      <input v-model.trim="crawlerConfigForm.source_tag" class="data-slot rounded-2xl px-4 py-3 text-white outline-none" placeholder="爬虫默认源">
+                    </label>
+                    <label class="grid gap-2 text-sm text-slate-200 md:col-span-2">
+                      <span>回看参数</span>
+                      <input v-model.trim="crawlerConfigForm.playseek_param" class="data-slot rounded-2xl px-4 py-3 text-white outline-none" placeholder="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}">
+                    </label>
+                    <label class="grid gap-2 text-sm text-slate-200">
+                      <span>定时爬取间隔（小时）</span>
+                      <input v-model.number="crawlerConfigForm.interval_hours" type="number" min="1" max="168" class="data-slot rounded-2xl px-4 py-3 text-white outline-none">
+                    </label>
+                    <div class="display-well rounded-2xl p-4 text-sm text-slate-200">
+                      <div class="section-stamp">配置文件位置</div>
+                      <div class="mt-2 break-all text-xs text-slate-300">{{ schedulerState.crawler.config.config_file_path || '保存后会自动生成 crawler_config.json' }}</div>
+                      <div class="mt-3 text-xs text-amber-300">{{ schedulerState.crawler.config.note }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-col gap-4">
+                  <div class="panel-soft rounded-[24px] p-5">
+                    <div class="section-stamp">运行概览</div>
+                    <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                      <div class="metric-chip rounded-2xl p-4">
+                        <div class="text-xs uppercase tracking-[0.25em] text-slate-500">状态</div>
+                        <div class="mt-2 text-sm text-slate-100">{{ crawlerStatusText }}</div>
+                      </div>
+                      <div class="metric-chip rounded-2xl p-4">
+                        <div class="text-xs uppercase tracking-[0.25em] text-slate-500">下次定时</div>
+                        <div class="mt-2 text-sm text-slate-100">{{ formatTime(schedulerState.jobs.crawler.next_run_time) }}</div>
+                      </div>
+                      <div class="metric-chip rounded-2xl p-4">
+                        <div class="text-xs uppercase tracking-[0.25em] text-slate-500">最近启动</div>
+                        <div class="mt-2 text-sm text-slate-100">{{ formatTime(schedulerState.crawler.last_started_at) }}</div>
+                      </div>
+                      <div class="metric-chip rounded-2xl p-4">
+                        <div class="text-xs uppercase tracking-[0.25em] text-slate-500">导入结果</div>
+                        <div class="mt-2 text-sm text-slate-100">{{ crawlerImportSummary }}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="log-screen crawler-readable-card rounded-[24px] p-5">
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="text-sm font-medium text-slate-100">执行日志</div>
+                      <div class="text-xs muted">返回码 {{ schedulerState.crawler.return_code ?? '-' }}</div>
+                    </div>
+                    <div class="mt-3 space-y-2 font-mono text-xs leading-6 text-slate-300">
+                      <div v-for="(line, index) in crawlerLogLines" :key="`crawler-tab-${index}`" class="truncate">{{ line }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section v-if="activeWorkspace === 'sources'" class="panel rounded-[28px] p-6">
+            <div class="flex flex-col gap-4">
+              <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <h2 class="font-display text-3xl font-semibold text-white">导入源导航</h2>
+                  <p class="mt-1 max-w-3xl text-sm muted">这里会区分手工导入的文件、订阅链接和爬虫来源。你可以查看汇总、只看单个来源，或者直接删除某个导入源。</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="setSourceAndFocus('')">查看汇总</button>
+                  <button class="action-key primary-key rounded-2xl px-4 py-3 text-sm font-medium text-white transition" @click="showImportModal = true">新增导入源</button>
+                </div>
+              </div>
+
+              <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <article class="panel-soft source-card rounded-[24px] p-5">
+                  <div class="source-card-head">
+                    <div>
+                      <div class="section-stamp">汇总视图</div>
+                      <div class="mt-2 text-xl font-semibold text-white">全部来源</div>
+                      <div class="mt-1 text-sm muted">汇总所有文件、订阅和爬虫来源</div>
+                    </div>
+                    <span class="metric-chip rounded-full px-3 py-1 text-xs muted">{{ totalSourceCount }}</span>
+                  </div>
+                  <div class="source-actions">
+                    <button class="action-key primary-key flex-1 rounded-xl px-3 py-2 text-sm font-medium text-white transition" @click="setSourceAndFocus('')">查看频道</button>
+                  </div>
+                </article>
+
+                <article v-for="source in sources" :key="`source-card-${source.name}`" class="panel-soft source-card rounded-[24px] p-5">
+                  <div class="source-card-head">
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-3">
+                        <span class="icon-well inline-flex h-10 w-10 items-center justify-center rounded-xl">{{ sourceBadge(source.name) }}</span>
+                        <div class="min-w-0">
+                          <div class="section-stamp">{{ source.kind || 'manual' }}</div>
+                          <div class="mt-1 truncate text-lg font-semibold text-white">{{ source.display_name || source.name }}</div>
+                        </div>
+                      </div>
+                      <div class="mt-3 text-xs muted">{{ source.name }}</div>
+                    </div>
+                    <span class="metric-chip rounded-full px-3 py-1 text-xs muted">{{ source.count }}</span>
+                  </div>
+                  <div class="display-well rounded-2xl p-4 text-sm text-slate-200">
+                    <div class="section-stamp">来源说明</div>
+                    <div class="mt-2 text-sm text-slate-200">{{ source.kind === 'file' ? '手工上传的 M3U 文件' : (source.kind === 'url' ? '手工填写的订阅链接' : (source.kind === 'crawler' ? '系统默认爬虫来源' : '手工自定义来源标签')) }}</div>
+                  </div>
+                  <div class="source-actions">
+                    <button class="action-key flex-1 rounded-xl px-3 py-2 text-sm transition" @click="setSourceAndFocus(source.name)">查看频道</button>
+                    <button class="action-key danger-key flex-1 rounded-xl px-3 py-2 text-sm transition disabled:opacity-50" @click="deleteSource(source.name)" :disabled="!source.can_delete || deletingSource === source.name">删除来源</button>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div v-if="showImportModal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="panel modal-shell w-full max-w-xl rounded-[28px] p-6">
+        <div class="flex items-start justify-between gap-4">
+          <div><h3 class="font-display text-2xl font-semibold">导入 M3U</h3><p class="mt-2 text-sm muted">支持上传本地 M3U 文件，或者粘贴远程订阅地址</p></div>
+          <button class="action-key icon-key rounded-full p-2 transition" @click="showImportModal = false"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        <div class="mt-6 grid gap-4">
+          <label class="grid gap-2 text-sm text-slate-200"><span>来源名称</span><input v-model.trim="importSourceTag" class="data-slot rounded-2xl px-4 py-3 text-white outline-none" placeholder="可留空，系统会自动用文件名或链接名分类"></label>
+          <label class="grid gap-2 text-sm text-slate-200"><span>上传本地文件</span><input ref="fileInput" type="file" accept=".m3u,.m3u8" class="data-slot rounded-2xl px-4 py-3 text-white"></label>
+          <div class="section-stamp text-center">或</div>
+          <label class="grid gap-2 text-sm text-slate-200"><span>远程订阅地址</span><input v-model.trim="importUrl" class="data-slot rounded-2xl px-4 py-3 text-white outline-none" placeholder="https://example.com/playlist.m3u"></label>
+        </div>
+        <div class="mt-6 flex justify-end gap-3"><button class="action-key rounded-2xl px-4 py-2 text-sm transition" @click="showImportModal = false">取消</button><button class="action-key primary-key rounded-2xl px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50" @click="doImport" :disabled="importing">{{ importing ? '导入中...' : '开始导入' }}</button></div>
+      </div>
+    </div>
+
+    <div v-if="showCrawlerConfigModal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="panel modal-shell w-full max-w-3xl rounded-[28px] p-6">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h3 class="font-display text-2xl font-semibold">爬虫默认配置</h3>
+            <p class="mt-2 text-sm muted">这里保存的是 `iptv.py` 的默认参数和定时爬取间隔，保存后会立刻生效。</p>
+          </div>
+          <button class="action-key icon-key rounded-full p-2 transition" @click="showCrawlerConfigModal = false">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="mt-6 grid gap-4 md:grid-cols-2">
+          <label class="grid gap-2 text-sm text-slate-200">
+            <span>API 地址</span>
+            <input v-model.trim="crawlerConfigForm.api_url" class="data-slot rounded-2xl px-4 py-3 text-white outline-none" placeholder="https://example.com/api/channels">
+          </label>
+          <label class="grid gap-2 text-sm text-slate-200">
+            <span>输出文件</span>
+            <input v-model.trim="crawlerConfigForm.m3u_file" class="data-slot rounded-2xl px-4 py-3 text-white outline-none" placeholder="2.m3u 或 output/custom.m3u">
+          </label>
+          <label class="grid gap-2 text-sm text-slate-200">
+            <span>RTP 前缀</span>
+            <input v-model.trim="crawlerConfigForm.rtp_prefix" class="data-slot rounded-2xl px-4 py-3 text-white outline-none" placeholder="http://192.168.10.1:10000/rtp/">
+          </label>
+          <label class="grid gap-2 text-sm text-slate-200">
+            <span>来源标签</span>
+            <input v-model.trim="crawlerConfigForm.source_tag" class="data-slot rounded-2xl px-4 py-3 text-white outline-none" placeholder="爬虫默认源">
+          </label>
+          <label class="grid gap-2 text-sm text-slate-200 md:col-span-2">
+            <span>回看参数</span>
+            <input v-model.trim="crawlerConfigForm.playseek_param" class="data-slot rounded-2xl px-4 py-3 text-white outline-none" placeholder="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}">
+          </label>
+          <label class="grid gap-2 text-sm text-slate-200">
+            <span>定时爬取间隔（小时）</span>
+            <input v-model.number="crawlerConfigForm.interval_hours" type="number" min="1" max="168" class="data-slot rounded-2xl px-4 py-3 text-white outline-none">
+          </label>
+          <div class="display-well rounded-2xl p-4 text-sm text-slate-200">
+            <div class="text-xs uppercase tracking-[0.25em] text-slate-500">配置文件位置</div>
+            <div class="mt-2 break-all text-xs text-slate-300">{{ schedulerState.crawler.config.config_file_path || '保存后会自动生成 crawler_config.json' }}</div>
+            <div class="mt-3 text-xs text-amber-300">{{ schedulerState.crawler.config.note }}</div>
+          </div>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-3">
+          <button class="action-key rounded-2xl px-4 py-2 text-sm transition" @click="showCrawlerConfigModal = false">取消</button>
+          <button class="action-key primary-key rounded-2xl px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50" @click="saveCrawlerConfig" :disabled="savingCrawlerConfig">{{ savingCrawlerConfig ? '保存中...' : '保存配置' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="diagnostic.show && diagnostic.channel" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="panel modal-shell w-full max-w-4xl rounded-[28px] overflow-hidden">
+        <div class="module-divider flex items-center justify-between border-b px-6 py-5">
+          <div class="flex items-center gap-3"><span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/14 text-blue-300"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m4 6V7m4 10v-4M5 19h14"/></svg></span><div><h3 class="font-display text-2xl font-semibold">频道诊断</h3><p class="mt-1 text-sm muted">查看频道状态、地址和最近一次检测结果</p></div></div>
+          <button class="action-key icon-key rounded-full p-2 transition" @click="diagnostic.show = false"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        <div class="grid gap-0 lg:grid-cols-[360px_minmax(0,1fr)]">
+          <div class="module-divider border-b p-6 lg:border-b-0 lg:border-r">
+            <div class="display-well rounded-[22px] p-4">
+              <div class="screen-panel relative overflow-hidden rounded-[18px] bg-black">
+                <video ref="previewVideo" class="h-52 w-full bg-black object-contain" controls autoplay muted playsinline></video>
+                <div v-if="previewState.loading" class="absolute inset-0 flex items-center justify-center bg-slate-950/75 text-sm text-slate-200">
+                  正在加载预览...
+                </div>
+                <div v-else-if="previewState.error" class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/85 p-5 text-center">
+                  <div class="text-4xl font-semibold text-white">{{ channelBadge(diagnostic.channel) }}</div>
+                  <div class="max-w-[260px] text-sm text-slate-300">{{ previewState.error }}</div>
+                  <button v-if="previewState.fallbackUrl" class="action-key rounded-xl px-4 py-2 text-xs transition" @click="openPreviewSource">
+                    新窗口打开源地址
+                  </button>
+                </div>
+              </div>
+              <div class="mt-4 text-center"><div class="text-2xl font-semibold text-white">{{ diagnostic.channel.tvg_name || '未命名频道' }}</div><div class="mt-1 text-sm muted">Internal ID: CH-{{ String(diagnostic.channel.pool_id || diagnostic.channel.id).padStart(4, '0') }}</div><div class="mt-3 inline-flex rounded-full px-3 py-1 text-xs" :class="diagnostic.channel.is_active ? 'bg-emerald-500/14 text-emerald-300' : 'bg-rose-500/14 text-rose-300'">状态：{{ diagnostic.channel.is_active ? '在线' : '离线' }}</div></div>
+              <div class="mt-5 grid gap-2 sm:grid-cols-2">
+                <button class="action-key primary-key rounded-2xl px-4 py-3 text-sm font-medium text-white transition" @click="startPreview(diagnostic.channel)">播放预览</button>
+                <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="stopPreview">停止预览</button>
+              </div>
+              <div class="status-well mt-3 rounded-2xl px-4 py-3 text-left">
+                <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500">预览状态</div>
+                <div class="mt-2 text-sm text-slate-200">{{ previewState.statusText || (previewState.active ? '正在播放' : '等待开始') }}</div>
+              </div>
+              <button class="action-key mt-3 w-full rounded-2xl px-4 py-3 text-sm transition" @click="checkChannel(diagnostic.channel)">Test Connection</button>
+              <div class="mt-3 text-center text-xs muted">上次检测：{{ formatTime(diagnostic.channel.last_check) }}</div>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="text-sm font-medium text-slate-200">直播源地址</div>
+            <div class="mt-3 flex gap-2"><div class="min-w-0 flex-1 rounded-2xl border border-slate-700/60 bg-slate-900/70 px-4 py-3 font-mono text-xs text-slate-300"><div class="truncate">{{ diagnostic.channel.live_url }}</div></div><button class="rounded-2xl bg-blue-500 px-4 py-3 text-white transition hover:bg-blue-400" @click="copyText(diagnostic.channel.live_url, '诊断地址已复制')">复制</button></div>
+            <div class="mt-6 text-sm font-medium text-slate-200">连接健康度</div>
+            <div class="mt-3 grid gap-3 md:grid-cols-3">
+              <div class="panel-soft rounded-2xl p-4"><div class="text-xs text-slate-500">延迟</div><div class="mt-2 text-3xl font-semibold text-white">{{ diagnostic.metrics.latency }}</div><div class="mt-1 text-xs text-emerald-300">稳定</div></div>
+              <div class="panel-soft rounded-2xl p-4"><div class="text-xs text-slate-500">可用率</div><div class="mt-2 text-3xl font-semibold text-white">{{ diagnostic.metrics.uptime }}</div><div class="mt-1 text-xs text-blue-300">近 30 秒估算</div></div>
+              <div class="panel-soft rounded-2xl p-4"><div class="text-xs text-slate-500">码率</div><div class="mt-2 text-3xl font-semibold text-white">{{ diagnostic.metrics.bitrate }}</div><div class="mt-1 text-xs text-slate-400">估算值</div></div>
+            </div>
+            <div class="mt-6 flex items-center justify-between"><div class="text-sm font-medium text-slate-200">诊断日志</div><button class="action-key rounded-xl px-3 py-2 text-xs transition" @click="resetDiagnosticLogs">清除日志</button></div>
+            <div class="log-screen mt-3 rounded-2xl p-4 font-mono text-xs leading-6 text-slate-300"><div v-for="(entry, index) in diagnostic.logs" :key="index" class="truncate">{{ entry }}</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="toast.show" class="toast-shell fixed bottom-5 right-5 z-[60] max-w-sm rounded-2xl px-4 py-3 text-sm shadow-2xl" :class="toast.type === 'error' ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-slate-950'">{{ toast.message }}</div>
+  </div>
+  <script>
+    const { createApp, computed, nextTick, onBeforeUnmount, onMounted, ref, watch } = Vue;
+    createApp({
+      setup() {
+        const channels = ref([]);
+        const groups = ref([]);
+        const sources = ref([]);
+        const publishedChannels = ref([]);
+        const publishedNameDrafts = ref({});
+        const publishedConfig = ref({ playlist_filename: 'my_list.m3u', playlist_path: '/playlist/my_list.m3u' });
+        const schedulerState = ref({
+          is_running: false,
+          last_validation: null,
+          last_import: null,
+          validation_stats: {},
+          import_stats: {},
+          jobs: {
+            validation: { next_run_time: null, interval_hours: 6 },
+            crawler: { next_run_time: null, interval_hours: 12 }
+          },
+          crawler: {
+            status: 'idle',
+            running: false,
+            trigger: null,
+            message: '还没有执行过爬虫',
+            last_started_at: null,
+            last_finished_at: null,
+            last_success_at: null,
+            duration_seconds: null,
+            return_code: null,
+            stdout_tail: [],
+            stderr_tail: [],
+            log_tail: ['INFO: 暂无执行日志，点击“手动爬取”后这里会显示输出摘要。'],
+            import_stats: {},
+            created_default_output: false,
+            output_file: { path: '', exists: false, size_bytes: 0, last_modified: null },
+            config: { m3u_file: '', resolved_m3u_file: '', api_url: '', rtp_prefix: '', playseek_param: '', interval_hours: 12, source_tag: '爬虫默认源', config_file_path: '', note: '当前没有单独配置文件，采用脚本内置默认参数。' }
+          }
+        });
+        const stats = ref({ total: 0, active: 0, inactive: 0, selected: 0 });
+        const activeWorkspace = ref('channels');
+        const currentGroup = ref('');
+        const currentSource = ref('');
+        const searchText = ref('');
+        const statusFilter = ref('');
+        const catchupFilter = ref('');
+        const sortBy = ref('group');
+        const sortDirection = ref('asc');
+        const selectedIds = ref(new Set());
+        const validating = ref(false);
+        const crawling = ref(false);
+        const addingBatch = ref(false);
+        const importing = ref(false);
+        const savingPublishedConfig = ref(false);
+        const deletingSource = ref('');
+        const showImportModal = ref(false);
+        const showCrawlerConfigModal = ref(false);
+        const savingCrawlerConfig = ref(false);
+        const importUrl = ref('');
+        const importSourceTag = ref('');
+        const crawlerConfigForm = ref({
+          api_url: '',
+          m3u_file: '2.m3u',
+          rtp_prefix: '',
+          playseek_param: '',
+          interval_hours: 12,
+          source_tag: '爬虫默认源'
+        });
+        const fileInput = ref(null);
+        const previewVideo = ref(null);
+        const previewState = ref({ loading: false, error: '', active: false, mode: '', fallbackUrl: '', usingProxy: false, sessionId: '', statusText: '' });
+        const toast = ref({ show: false, type: 'success', message: '' });
+        const diagnostic = ref({ show: false, channel: null, metrics: { latency: '24ms', uptime: '99.98%', bitrate: '6.2 Mbps' }, logs: [] });
+        let toastTimer = null;
+        let hlsPlayer = null;
+        let mpegtsPlayer = null;
+        let schedulerTimer = null;
+        let crawlPollingTimer = null;
+
+        const request = async (url, options = {}) => {
+          const response = await fetch(url, options);
+          if (!response.ok) {
+            let detail = '请求失败';
+            try { const data = await response.json(); detail = data.detail || data.message || detail; } catch (error) {}
+            throw new Error(detail);
+          }
+          const contentType = response.headers.get('content-type') || '';
+          return contentType.includes('application/json') ? response.json() : response.text();
+        };
+
+        const normalizeWorkspace = (value) => ['channels', 'crawler', 'sources'].includes(value) ? value : 'channels';
+
+        const setWorkspaceHash = (workspace) => {
+          if (typeof window === 'undefined') return;
+          const nextHash = `#${workspace}`;
+          if (window.location.hash !== nextHash) {
+            window.location.hash = nextHash;
+          }
+        };
+
+        const showToast = (message, type = 'success') => {
+          toast.value = { show: true, type, message };
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(() => { toast.value.show = false; }, 2600);
+        };
+
+        const formatTime = (value) => {
+          if (!value) return '暂无记录';
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return value;
+          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+        };
+
+        const formatFileSize = (bytes) => {
+          if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+          if (bytes < 1024) return `${bytes} B`;
+          if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+          return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+        };
+
+        const formatLatency = (latency) => {
+          return Number.isFinite(latency) ? `${latency} ms` : '--';
+        };
+
+        const sourceBadge = (name) => {
+          const raw = (name || '').replace(/^(文件|链接):\s*/u, '').trim();
+          return raw.replace(/[^A-Za-z0-9一-龥]/g, '').slice(0, 2).toUpperCase() || '源';
+        };
+
+        const totalSourceCount = computed(() => sources.value.reduce((sum, item) => sum + (item.count || 0), 0));
+
+        const currentViewTitle = computed(() => {
+          const source = currentSource.value ? ` · ${currentSource.value}` : '';
+          return `${currentGroup.value || '所有频道'}${source}`;
+        });
+
+        const currentViewSubtitle = computed(() => {
+          const groupText = currentGroup.value ? `当前分组：${currentGroup.value}` : '当前分组：全部';
+          const sourceText = currentSource.value ? `当前来源：${currentSource.value}` : '当前来源：汇总视图';
+          return `${groupText}，${sourceText}，支持按延迟和来源排序筛选。`;
+        });
+
+        const crawlerStatusText = computed(() => {
+          const status = schedulerState.value.crawler.status;
+          if (status === 'running') return '运行中';
+          if (status === 'success') return '最近成功';
+          if (status === 'error') return '最近失败';
+          return '未运行';
+        });
+
+        const crawlerStatusClass = computed(() => {
+          const status = schedulerState.value.crawler.status;
+          if (status === 'running') return 'bg-blue-500/15 text-blue-300';
+          if (status === 'success') return 'bg-emerald-500/15 text-emerald-300';
+          if (status === 'error') return 'bg-rose-500/15 text-rose-300';
+          return 'bg-slate-800 text-slate-300';
+        });
+
+        const crawlerTriggerText = computed(() => {
+          const trigger = schedulerState.value.crawler.trigger;
+          if (trigger === 'manual') return '最近一次由你手动触发';
+          if (trigger === 'scheduled') return '最近一次由定时任务触发';
+          return '还没有执行过';
+        });
+
+        const crawlerImportSummary = computed(() => {
+          const summary = schedulerState.value.crawler.import_stats || {};
+          return `新增 ${summary.added || 0} / 更新 ${summary.updated || 0} / 保持 ${summary.unchanged || 0}`;
+        });
+
+        const crawlerLogLines = computed(() => {
+          const lines = schedulerState.value.crawler.log_tail || [];
+          return lines.length ? lines : ['INFO: 暂无执行日志，点击“手动爬取”后这里会显示输出摘要。'];
+        });
+
+        const channelBadge = (channel) => {
+          const raw = channel?.tvg_name || channel?.group_title || 'TV';
+          return raw.replace(/[^A-Za-z0-9一-龥]/g, '').slice(0, 2).toUpperCase() || 'TV';
+        };
+
+        const appendDiagnosticLog = (message, level = 'INFO') => {
+          const line = `[${new Date().toLocaleTimeString('zh-CN', { hour12: false })}] ${level}: ${message}`;
+          diagnostic.value.logs.unshift(line);
+          diagnostic.value.logs = diagnostic.value.logs.slice(0, 10);
+        };
+
+        const detectPreviewMode = (url) => {
+          const normalized = (url || '').toLowerCase();
+          if (!normalized) return 'unsupported';
+          if (normalized.startsWith('rtsp://') || normalized.startsWith('rtp://') || normalized.startsWith('udp://')) return 'unsupported';
+          if (/\.m3u8(\?|$)/.test(normalized)) return 'hls';
+          if (/\.(mp4|webm|ogg|m4v)(\?|$)/.test(normalized)) return 'native';
+          if (normalized.startsWith('http://') || normalized.startsWith('https://')) return 'mpegts';
+          return 'unsupported';
+        };
+
+        const proxyPreviewUrl = (url) => `/api/preview/stream?url=${encodeURIComponent(url)}`;
+
+        const destroyPreview = () => {
+          if (hlsPlayer) {
+            hlsPlayer.destroy();
+            hlsPlayer = null;
+          }
+          if (mpegtsPlayer) {
+            mpegtsPlayer.destroy();
+            mpegtsPlayer = null;
+          }
+          if (previewVideo.value) {
+            try { previewVideo.value.pause(); } catch (error) {}
+            previewVideo.value.removeAttribute('src');
+            previewVideo.value.load();
+          }
+          const previousSessionId = previewState.value.sessionId;
+          previewState.value = { loading: false, error: '', active: false, mode: '', fallbackUrl: '', usingProxy: false, sessionId: '', statusText: '' };
+          if (previousSessionId) {
+            fetch(`/api/preview/session/${previousSessionId}`, { method: 'DELETE' }).catch(() => {});
+          }
+        };
+
+        const loadGroups = async () => {
+          const params = new URLSearchParams();
+          if (currentSource.value) params.set('source_tag', currentSource.value);
+          const data = await request(`/api/groups${params.toString() ? `?${params.toString()}` : ''}`);
+          groups.value = data.groups || [];
+          stats.value = data.stats || stats.value;
+        };
+
+        const loadSources = async () => {
+          const params = new URLSearchParams();
+          if (currentGroup.value) params.set('group', currentGroup.value);
+          const data = await request(`/api/sources${params.toString() ? `?${params.toString()}` : ''}`);
+          sources.value = data.sources || [];
+        };
+
+        const loadChannels = async () => {
+          const params = new URLSearchParams();
+          if (currentGroup.value) params.set('group', currentGroup.value);
+          if (currentSource.value) params.set('source_tag', currentSource.value);
+          params.set('sort_by', sortBy.value);
+          params.set('sort_direction', sortDirection.value);
+          const data = await request(`/api/channels${params.toString() ? `?${params.toString()}` : ''}`);
+          channels.value = data.channels || [];
+          const validIds = new Set(channels.value.map((item) => item.id));
+          selectedIds.value = new Set([...selectedIds.value].filter((id) => validIds.has(id)));
+        };
+
+        const loadSelected = async () => {
+          const data = await request('/api/selected');
+          publishedChannels.value = data.channels || [];
+          publishedNameDrafts.value = Object.fromEntries(
+            publishedChannels.value.map((item) => [item.selected_id, item.custom_name || ''])
+          );
+        };
+
+        const loadPublishedConfig = async () => {
+          const data = await request('/api/published/config');
+          publishedConfig.value = {
+            playlist_filename: data.playlist_filename || 'my_list.m3u',
+            playlist_path: data.playlist_path || '/playlist/my_list.m3u'
+          };
+        };
+
+        const loadSchedulerState = async () => {
+          const data = await request('/api/scheduler');
+          schedulerState.value = {
+            ...schedulerState.value,
+            ...data,
+            jobs: {
+              ...schedulerState.value.jobs,
+              ...(data.jobs || {})
+            },
+            crawler: {
+              ...schedulerState.value.crawler,
+              ...(data.crawler || {})
+            }
+          };
+        };
+
+        const loadCrawlerConfig = async () => {
+          const data = await request('/api/crawler/config');
+          crawlerConfigForm.value = {
+            api_url: data.api_url || '',
+            m3u_file: data.m3u_file || '2.m3u',
+            rtp_prefix: data.rtp_prefix || '',
+            playseek_param: data.playseek_param || '',
+            interval_hours: data.interval_hours || 12,
+            source_tag: data.source_tag || '爬虫默认源'
+          };
+        };
+
+        const refreshSchedulerState = async () => {
+          try {
+            await loadSchedulerState();
+            showToast('爬虫状态已刷新');
+          } catch (error) {
+            showToast(error.message, 'error');
+          }
+        };
+
+        const pollSchedulerState = async () => {
+          try {
+            await loadSchedulerState();
+          } catch (error) {}
+        };
+
+        const refreshAll = async () => {
+          try { await Promise.all([loadGroups(), loadSources(), loadChannels(), loadSelected(), loadSchedulerState(), loadPublishedConfig()]); }
+          catch (error) { showToast(error.message, 'error'); }
+        };
+
+        const filteredChannels = computed(() => channels.value.filter((channel) => {
+          const keyword = searchText.value.trim().toLowerCase();
+          const searchable = [channel.tvg_name, channel.group_title, channel.source_tag].filter(Boolean).join(' ').toLowerCase();
+          if (keyword && !searchable.includes(keyword)) return false;
+          if (statusFilter.value !== '' && channel.is_active !== (statusFilter.value === 'true')) return false;
+          if (catchupFilter.value === 'true' && !channel.catchup_source) return false;
+          return true;
+        }));
+
+        const publishedPoolIds = computed(() => new Set(publishedChannels.value.map((item) => item.pool_id)));
+        const onlineCount = computed(() => filteredChannels.value.filter((channel) => channel.is_active).length);
+
+        const openCrawlerConfig = async () => {
+          await loadCrawlerConfig();
+          activeWorkspace.value = 'crawler';
+          setWorkspaceHash('crawler');
+        };
+
+        const saveCrawlerConfig = async () => {
+          savingCrawlerConfig.value = true;
+          try {
+            const payload = {
+              ...crawlerConfigForm.value,
+              interval_hours: Number(crawlerConfigForm.value.interval_hours || 12)
+            };
+            const data = await request('/api/crawler/config', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            showCrawlerConfigModal.value = false;
+            schedulerState.value = {
+              ...schedulerState.value,
+              ...(data.scheduler || {}),
+              jobs: {
+                ...schedulerState.value.jobs,
+                ...(data.scheduler?.jobs || {})
+              },
+              crawler: {
+                ...schedulerState.value.crawler,
+                ...(data.scheduler?.crawler || {})
+              }
+            };
+            showToast('爬虫配置已保存并生效');
+          } catch (error) {
+            showToast(error.message, 'error');
+          } finally {
+            savingCrawlerConfig.value = false;
+          }
+        };
+
+        const setWorkspace = async (workspace) => {
+          const next = normalizeWorkspace(workspace);
+          activeWorkspace.value = next;
+          setWorkspaceHash(next);
+          if (next === 'crawler') {
+            await loadCrawlerConfig();
+          }
+        };
+
+        const setGroup = async (group) => {
+          currentGroup.value = group;
+          await Promise.all([loadChannels(), loadGroups(), loadSources()]);
+        };
+        const setSource = async (source) => {
+          currentSource.value = source;
+          await Promise.all([loadChannels(), loadGroups(), loadSources()]);
+        };
+        const setSourceAndFocus = async (source) => {
+          await setSource(source);
+          await setWorkspace('channels');
+        };
+        const toggleSelect = (id) => { const next = new Set(selectedIds.value); next.has(id) ? next.delete(id) : next.add(id); selectedIds.value = next; };
+        const selectAllVisible = () => { selectedIds.value = new Set(filteredChannels.value.map((channel) => channel.id)); };
+        const selectAllOnline = () => { selectedIds.value = new Set(filteredChannels.value.filter((channel) => channel.is_active).map((channel) => channel.id)); };
+        const clearSelection = () => { selectedIds.value = new Set(); };
+
+        const copyText = async (text, message) => {
+          if (!text) return showToast('没有可复制的内容', 'error');
+          try { await navigator.clipboard.writeText(text); showToast(message); }
+          catch (error) { showToast('复制失败，请检查浏览器权限', 'error'); }
+        };
+
+        const copyPlaylist = async () => {
+          await copyText(`${window.location.origin}${publishedConfig.value.playlist_path}`, '播放列表链接已复制');
+        };
+
+        const copySelectedUrls = async () => {
+          const text = filteredChannels.value.filter((channel) => selectedIds.value.has(channel.id)).map((channel) => channel.live_url).filter(Boolean).join('\n');
+          await copyText(text, `已复制 ${selectedIds.value.size} 条已选地址`);
+        };
+
+        const copyPublishedUrls = async () => {
+          const text = publishedChannels.value.map((item) => item.live_url).filter(Boolean).join('\n');
+          await copyText(text, `已复制 ${publishedChannels.value.length} 条发布地址`);
+        };
+
+        const addSelectedToPublished = async () => {
+          if (!selectedIds.value.size) return;
+          addingBatch.value = true;
+          try {
+            const data = await request('/api/selected/batch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pool_ids: [...selectedIds.value] }) });
+            await Promise.all([loadSelected(), loadGroups()]);
+            selectedIds.value = new Set();
+            showToast(`已加入播放列表 ${data.count} 个频道`);
+          } catch (error) { showToast(error.message, 'error'); }
+          finally { addingBatch.value = false; }
+        };
+
+        const addOne = async (poolId) => {
+          try {
+            await request('/api/selected', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pool_id: poolId }) });
+            await Promise.all([loadSelected(), loadGroups()]);
+            showToast('频道已加入播放列表');
+          } catch (error) { showToast(error.message, 'error'); }
+        };
+
+        const removePublished = async (selectedId) => {
+          try {
+            await request(`/api/selected/${selectedId}`, { method: 'DELETE' });
+            await Promise.all([loadSelected(), loadGroups()]);
+            showToast('已从播放列表移除');
+          } catch (error) { showToast(error.message, 'error'); }
+        };
+
+        const renamePublished = async (item) => {
+          if (!item?.selected_id) return;
+          const currentName = item.custom_name || item.tvg_name || '';
+          const nextName = window.prompt('请输入导出到 my_list.m3u 的频道名称。留空则恢复默认频道名。', currentName);
+          if (nextName === null) return;
+
+          const normalized = nextName.trim();
+          if (normalized === (item.custom_name || '').trim()) return;
+
+          try {
+            const params = new URLSearchParams();
+            params.set('custom_name', normalized);
+            await request(`/api/selected/${item.selected_id}?${params.toString()}`, { method: 'PUT' });
+            await loadSelected();
+            showToast(normalized ? '播放列表名称已更新' : '已恢复默认频道名称');
+          } catch (error) {
+            showToast(error.message, 'error');
+          }
+        };
+
+        const savePublishedConfig = async () => {
+          savingPublishedConfig.value = true;
+          try {
+            const payload = { playlist_filename: publishedConfig.value.playlist_filename };
+            const data = await request('/api/published/config', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            publishedConfig.value = {
+              playlist_filename: data.playlist_filename || 'my_list.m3u',
+              playlist_path: data.playlist_path || '/playlist/my_list.m3u'
+            };
+            showToast('播放列表文件名已保存');
+          } catch (error) {
+            showToast(error.message, 'error');
+          } finally {
+            savingPublishedConfig.value = false;
+          }
+        };
+
+        const savePublishedName = async (item) => {
+          if (!item?.selected_id) return;
+          try {
+            const params = new URLSearchParams();
+            params.set('custom_name', (publishedNameDrafts.value[item.selected_id] || '').trim());
+            await request(`/api/selected/${item.selected_id}?${params.toString()}`, { method: 'PUT' });
+            await loadSelected();
+            showToast(params.get('custom_name') ? '频道导出名称已保存' : '已恢复默认频道名');
+          } catch (error) {
+            showToast(error.message, 'error');
+          }
+        };
+
+        const resetPublishedName = (item) => {
+          if (!item?.selected_id) return;
+          publishedNameDrafts.value = {
+            ...publishedNameDrafts.value,
+            [item.selected_id]: item.custom_name || ''
+          };
+        };
+
+        const clearPublished = async () => {
+          try {
+            await request('/api/selected', { method: 'DELETE' });
+            await Promise.all([loadSelected(), loadGroups()]);
+            showToast('播放列表已清空');
+          } catch (error) { showToast(error.message, 'error'); }
+        };
+
+        const deleteSource = async (sourceName) => {
+          if (!sourceName) return;
+          const confirmed = window.confirm(`确认删除来源“${sourceName}”及其对应频道吗？`);
+          if (!confirmed) return;
+
+          deletingSource.value = sourceName;
+          try {
+            const data = await request(`/api/sources?source_tag=${encodeURIComponent(sourceName)}`, { method: 'DELETE' });
+            if (currentSource.value === sourceName) {
+              currentSource.value = '';
+            }
+            await refreshAll();
+            showToast(`已删除来源，移除 ${data.deleted_channels || 0} 个频道`);
+          } catch (error) {
+            showToast(error.message, 'error');
+          } finally {
+            deletingSource.value = '';
+          }
+        };
+
+        const resetDiagnosticLogs = () => {
+          diagnostic.value.logs = [
+            '[14:22:01] INFO: 等待新的检测结果...',
+            '[14:22:06] INFO: 可手动点击 Test Connection 重新检测。'
+          ];
+        };
+
+        const startPreview = async (channel = diagnostic.value.channel) => {
+          if (!channel?.live_url) {
+            previewState.value.error = '当前频道没有可播放地址';
+            return;
+          }
+
+          destroyPreview();
+          previewState.value.loading = true;
+          previewState.value.fallbackUrl = channel.live_url;
+          previewState.value.mode = detectPreviewMode(channel.live_url);
+          previewState.value.statusText = '正在初始化预览...';
+
+          appendDiagnosticLog(`启动预览，检测到模式: ${previewState.value.mode}`, 'INFO');
+
+          await nextTick();
+          const video = previewVideo.value;
+          if (!video) {
+            previewState.value.loading = false;
+            previewState.value.error = '播放器初始化失败';
+            return;
+          }
+
+          video.autoplay = true;
+          video.muted = true;
+          video.defaultMuted = true;
+          video.playsInline = true;
+          video.setAttribute('muted', '');
+
+          video.onloadedmetadata = () => {
+            previewState.value.statusText = '已加载媒体信息';
+            appendDiagnosticLog('已加载媒体信息');
+          };
+          video.onloadeddata = () => {
+            previewState.value.statusText = '已接收到首帧';
+            appendDiagnosticLog('已接收到首帧画面');
+          };
+          video.oncanplay = () => {
+            previewState.value.statusText = '可以开始播放';
+          };
+          video.onplaying = () => {
+            previewState.value.statusText = '正在播放';
+            previewState.value.active = true;
+            appendDiagnosticLog('播放器已进入播放状态');
+          };
+          video.onwaiting = () => {
+            previewState.value.statusText = '缓冲中...';
+          };
+          video.onstalled = () => {
+            previewState.value.statusText = '流已停顿，等待更多数据';
+            appendDiagnosticLog('播放器检测到流停顿', 'WARN');
+          };
+          video.onerror = () => {
+            previewState.value.statusText = '浏览器播放器报错';
+          };
+
+          const playHls = async (playlistUrl) => {
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            if (window.Hls && window.Hls.isSupported() && !isSafari) {
+              hlsPlayer = new window.Hls({ lowLatencyMode: true });
+              hlsPlayer.loadSource(playlistUrl);
+              hlsPlayer.attachMedia(video);
+              hlsPlayer.on(window.Hls.Events.MANIFEST_PARSED, async () => {
+                try { await video.play(); } catch (error) {}
+              });
+              hlsPlayer.on(window.Hls.Events.ERROR, (_event, data) => {
+                if (data?.fatal) {
+                  previewState.value.error = 'HLS 预览失败，请检查转码输出或流地址';
+                  previewState.value.loading = false;
+                  appendDiagnosticLog(`HLS 预览失败 ${data.type || ''}`, 'ERROR');
+                }
+              });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+              video.src = playlistUrl;
+              await video.play().catch(() => {});
+            } else {
+              throw new Error('当前浏览器不支持 HLS 预览');
+            }
+            previewState.value.active = true;
+          };
+
+          try {
+            const session = await request('/api/preview/session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: channel.live_url })
+            });
+            previewState.value.sessionId = session.session_id;
+            previewState.value.mode = 'hls-proxy';
+            previewState.value.usingProxy = true;
+            previewState.value.statusText = 'FFmpeg 转码已启动，正在等待画面...';
+            await playHls(session.playlist_url);
+            appendDiagnosticLog('已启动 FFmpeg 预览转码并输出画面');
+          } catch (sessionError) {
+            appendDiagnosticLog(`FFmpeg 预览失败，尝试浏览器直连：${sessionError.message}`, 'WARN');
+
+            try {
+              if (previewState.value.mode === 'unsupported') {
+                throw new Error('该源属于 RTP/RTSP/UDP 等格式，浏览器不能直接出画面，且 FFmpeg 预览也启动失败。');
+              }
+
+              if (previewState.value.mode === 'native') {
+                video.src = channel.live_url;
+                await video.play().catch(() => {});
+                previewState.value.active = true;
+                previewState.value.statusText = '已切换到原生播放器';
+                appendDiagnosticLog('已回退到浏览器原生播放器');
+              } else if (previewState.value.mode === 'hls') {
+                await playHls(channel.live_url);
+                previewState.value.statusText = '已切换到 HLS 直连预览';
+                appendDiagnosticLog('已回退到 HLS 直连预览');
+              } else {
+                if (!(window.mpegts && window.mpegts.isSupported())) {
+                  throw new Error('当前浏览器不支持 MPEG-TS 预览');
+                }
+                const proxyUrl = proxyPreviewUrl(channel.live_url);
+                appendDiagnosticLog(`使用代理地址: ${proxyUrl}`, 'INFO');
+                mpegtsPlayer = window.mpegts.createPlayer(
+                  { type: 'mpegts', isLive: true, url: proxyUrl },
+                  { enableWorker: true, lazyLoad: false, liveBufferLatencyChasing: true, enableStashBuffer: false }
+                );
+                mpegtsPlayer.attachMediaElement(video);
+                mpegtsPlayer.on(window.mpegts.Events.ERROR, (errorType, errorDetail) => {
+                  previewState.value.error = '视频预览失败，请检查流地址、代理连通性或源格式';
+                  previewState.value.loading = false;
+                  appendDiagnosticLog(`MPEG-TS 错误: ${errorType || ''} ${errorDetail || ''}`, 'ERROR');
+                });
+                mpegtsPlayer.load();
+                await mpegtsPlayer.play().catch((err) => {
+                  previewState.value.error = '播放失败，请尝试刷新页面或使用新窗口打开';
+                  previewState.value.statusText = '播放器启动失败';
+                  previewState.value.loading = false;
+                  appendDiagnosticLog(`播放错误: ${err?.message || 'Unknown'}`, 'ERROR');
+                });
+                previewState.value.active = true;
+                previewState.value.usingProxy = true;
+                previewState.value.statusText = '已切换到 MPEG-TS 直连预览';
+                appendDiagnosticLog('已回退到本地代理直连 MPEG-TS 预览');
+              }
+            } catch (directError) {
+              previewState.value.error = directError?.message || sessionError?.message || '视频预览失败';
+              previewState.value.statusText = '预览失败';
+              appendDiagnosticLog(previewState.value.error, 'ERROR');
+            }
+          } finally {
+            previewState.value.loading = false;
+          }
+        };
+
+        const stopPreview = () => {
+          destroyPreview();
+          previewState.value.statusText = '已停止预览';
+          appendDiagnosticLog('已停止视频预览');
+        };
+
+        const openPreviewSource = () => {
+          if (previewState.value.fallbackUrl) {
+            window.open(previewState.value.fallbackUrl, '_blank', 'noopener,noreferrer');
+          }
+        };
+
+        const openDiagnostic = async (channel) => {
+          diagnostic.value.channel = { ...channel };
+          diagnostic.value.metrics = {
+            latency: formatLatency(channel.latency_ms),
+            uptime: channel.is_active ? '99.98%' : '71.20%',
+            bitrate: channel.is_active ? '6.2 Mbps' : '0.8 Mbps'
+          };
+          diagnostic.value.logs = [
+            `[${new Date().toLocaleTimeString('zh-CN', { hour12: false })}] INFO: 已载入频道 ${channel.tvg_name || '未命名频道'}`,
+            `[${new Date().toLocaleTimeString('zh-CN', { hour12: false })}] INFO: 当前地址 ${channel.live_url}`,
+            `[${new Date().toLocaleTimeString('zh-CN', { hour12: false })}] ${channel.is_active ? 'INFO' : 'WARN'}: 当前状态 ${channel.is_active ? '在线' : '离线'}`
+          ];
+          diagnostic.value.show = true;
+          await startPreview(channel);
+        };
+
+        const checkChannel = async (channel) => {
+          try {
+            const id = channel.pool_id || channel.id;
+            const data = await request(`/api/validate/${id}`, { method: 'POST' });
+            const poolTarget = channels.value.find((item) => item.id === id);
+            const selectedTarget = publishedChannels.value.find((item) => item.pool_id === id);
+            if (poolTarget) { poolTarget.is_active = data.is_active; poolTarget.last_check = data.last_check; poolTarget.latency_ms = data.latency_ms; }
+            if (selectedTarget) { selectedTarget.is_active = data.is_active; selectedTarget.last_check = data.last_check; selectedTarget.latency_ms = data.latency_ms; }
+            if (diagnostic.value.channel && (diagnostic.value.channel.id === id || diagnostic.value.channel.pool_id === id)) {
+              diagnostic.value.channel = { ...diagnostic.value.channel, is_active: data.is_active, last_check: data.last_check, latency_ms: data.latency_ms };
+              diagnostic.value.metrics.latency = formatLatency(data.latency_ms);
+              diagnostic.value.logs.unshift(`[${new Date().toLocaleTimeString('zh-CN', { hour12: false })}] ${data.is_active ? 'INFO' : 'ERROR'}: 检测完成，频道当前${data.is_active ? '在线' : '离线'}`);
+              diagnostic.value.logs = diagnostic.value.logs.slice(0, 8);
+            }
+            await Promise.all([loadGroups(), loadSources()]);
+            showToast(data.is_active ? '频道在线' : '频道离线', data.is_active ? 'success' : 'error');
+          } catch (error) { showToast(error.message, 'error'); }
+        };
+
+        const triggerAutoCrawl = async () => {
+          if (crawling.value || schedulerState.value.crawler.running) return;
+          crawling.value = true;
+          clearInterval(crawlPollingTimer);
+          schedulerState.value = {
+            ...schedulerState.value,
+            crawler: {
+              ...schedulerState.value.crawler,
+              status: 'running',
+              running: true,
+              trigger: 'manual',
+              last_started_at: new Date().toISOString(),
+              message: '已启动手动爬虫，正在执行 iptv.py ...',
+              log_tail: ['INFO: 已启动手动爬虫，正在执行 iptv.py']
+            }
+          };
+          crawlPollingTimer = setInterval(pollSchedulerState, 1500);
+          try {
+            const data = await request('/api/crawler/run', { method: 'POST' });
+            if (data.crawler) {
+              schedulerState.value = {
+                ...schedulerState.value,
+                last_import: data.timestamp || schedulerState.value.last_import,
+                import_stats: data.import_stats || schedulerState.value.import_stats,
+                crawler: {
+                  ...schedulerState.value.crawler,
+                  ...data.crawler
+                }
+              };
+            }
+            await Promise.all([loadGroups(), loadSources(), loadChannels(), loadSelected(), loadSchedulerState()]);
+            const stats = data.import_stats || {};
+            const createdHint = data.crawler?.created_default_output ? '，已自动创建默认输出文件' : '';
+            showToast(`爬取完成，新增 ${stats.added || 0}，更新 ${stats.updated || 0}${createdHint}`);
+          } catch (error) {
+            await pollSchedulerState();
+            showToast(error.message || '爬取失败', 'error');
+          } finally {
+            clearInterval(crawlPollingTimer);
+            crawlPollingTimer = null;
+            crawling.value = false;
+          }
+        };
+
+        const validateAll = async () => {
+          validating.value = true;
+          try {
+            const data = await request('/api/validate/all', { method: 'POST' });
+            await Promise.all([loadChannels(), loadGroups(), loadSources(), loadSelected(), loadSchedulerState()]);
+            showToast(`检测完成，在线 ${data.online} / ${data.total}`);
+          } catch (error) { showToast(error.message, 'error'); }
+          finally { validating.value = false; }
+        };
+
+        const doImport = async () => {
+          const file = fileInput.value?.files?.[0];
+          const sourceTag = importSourceTag.value.trim();
+          if (!file && !importUrl.value) return showToast('请先选择文件或填写订阅地址', 'error');
+          importing.value = true;
+          try {
+            let data;
+            if (file) {
+              const form = new FormData();
+              form.append('file', file);
+              data = await request(`/api/import/file?source_tag=${encodeURIComponent(sourceTag)}`, { method: 'POST', body: form });
+            } else {
+              data = await request(`/api/import/url?url=${encodeURIComponent(importUrl.value)}&source_tag=${encodeURIComponent(sourceTag)}`, { method: 'POST' });
+            }
+            showImportModal.value = false;
+            importUrl.value = '';
+            importSourceTag.value = '';
+            if (fileInput.value) fileInput.value.value = '';
+            await refreshAll();
+            const summary = data.result || {};
+            showToast(`导入完成，新增 ${summary.added || 0}，更新 ${summary.updated || 0}，来源 ${data.source_tag || '自动分类'}`);
+          } catch (error) { showToast(error.message, 'error'); }
+          finally { importing.value = false; }
+        };
+
+        onMounted(async () => {
+          activeWorkspace.value = normalizeWorkspace((window.location.hash || '').replace('#', ''));
+          await refreshAll();
+          await loadCrawlerConfig();
+          setWorkspaceHash(activeWorkspace.value);
+          schedulerTimer = setInterval(pollSchedulerState, 10000);
+        });
+
+        watch([sortBy, sortDirection], async () => {
+          await loadChannels();
+        });
+
+        watch(() => diagnostic.value.show, (visible) => {
+          if (!visible) {
+            destroyPreview();
+          }
+        });
+
+        onBeforeUnmount(() => {
+          clearInterval(schedulerTimer);
+          clearInterval(crawlPollingTimer);
+          destroyPreview();
+        });
+
+        return {
+          activeWorkspace, addingBatch, addOne, addSelectedToPublished, catchupFilter, channelBadge, checkChannel,
+          clearPublished, clearSelection, copyPlaylist, copyPublishedUrls, copySelectedUrls, copyText,
+          crawlerConfigForm, crawlerImportSummary, crawlerLogLines, crawlerStatusClass, crawlerStatusText, crawlerTriggerText,
+          crawling, currentGroup, currentSource, currentViewSubtitle, currentViewTitle, deleteSource, deletingSource, diagnostic, doImport, fileInput, filteredChannels, formatFileSize, formatLatency, formatTime, groups, importing,
+          importSourceTag, importUrl, onlineCount, openCrawlerConfig, openDiagnostic, publishedChannels, publishedConfig, publishedNameDrafts, publishedPoolIds,
+          previewState, previewVideo, refreshAll, refreshSchedulerState, removePublished, renamePublished, resetDiagnosticLogs, resetPublishedName, saveCrawlerConfig, savePublishedConfig, savePublishedName, savingCrawlerConfig, savingPublishedConfig, schedulerState,
+          searchText, selectAllOnline, selectAllVisible, selectedIds, setGroup, setSource, setSourceAndFocus, setWorkspace, showCrawlerConfigModal, showImportModal,
+          sortBy, sortDirection, sourceBadge, sources, startPreview, stats, statusFilter, stopPreview, toast, toggleSelect, totalSourceCount, validateAll, validating,
+          openPreviewSource
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+﻿#EXTM3U
+#EXTINF:-1 tvg-name="测试导入频道" group-title="测试分组",测试导入频道
+http://127.0.0.1:8000/test-import-preview.m3u8

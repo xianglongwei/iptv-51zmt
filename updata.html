@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#258cf4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>M3U 文件上传</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="flex h-screen flex-col overflow-hidden relative">
+<!-- Header -->
+<header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-6 py-3 shrink-0">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-primary">
+<span class="material-symbols-outlined text-3xl font-bold">layers</span>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold tracking-tight">M3U 管理器</h2>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg text-sm font-semibold transition-colors" onclick="window.location.href='index.html'">
+<span class="material-symbols-outlined text-lg">arrow_back</span>返回主页
+</button>
+<div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 overflow-hidden" data-alt="User profile avatar icon" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC_-AERYaz07UUqTI1OSZoh0C-J1eTid1QwOLTMqj4EqEHhYBMcy_errJ_Dv68fPfkIkz-goQupnnT2FbuzQbmV1kM5DqdbmpdHGqa0vYFG6z5Ib3hU5n3qRdD85l6Bxt1MgyT9QiSP6GY4ObXCvtpN9fOiA0-p-7tAdjbqGi3ZXse6hGTU8mfJ6dFutkveNd_4VzfvtSjvLAaQKtdsteHyzMRlozrzrFbzMSM0OLaXGgQjdBq5RXwEnPWP-8ouTZ9qhCVFV2ZxcZHr'); background-size: cover;">
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto bg-slate-50 dark:bg-background-dark/50 p-6">
+<div class="mb-8 flex items-center justify-between">
+<div>
+<h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-1">上传 M3U 文件</h1>
+<p class="text-slate-500 dark:text-slate-400 text-sm">上传并处理 M3U 播放列表文件</p>
+</div>
+</div>
+
+<!-- Upload Form -->
+<div class="max-w-2xl mx-auto bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-lg">
+<form id="upload-form" enctype="multipart/form-data">
+<div class="mb-6">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">选择 M3U 文件</label>
+<div class="flex items-center justify-center w-full">
+<label class="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg cursor-pointer bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<div class="flex flex-col items-center justify-center pt-5 pb-6">
+<span class="material-symbols-outlined text-6xl text-slate-400">upload_file</span>
+<p class="mt-2 text-sm text-slate-500 dark:text-slate-400"><span class="font-semibold">点击上传</span> 或拖放文件</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">支持 .m3u, .m3u8 文件</p>
+</div>
+<input id="file-input" name="file" type="file" class="hidden" accept=".m3u,.m3u8"/>
+</label>
+</div>
+</div>
+
+<div class="mb-6">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">播放列表名称</label>
+<input type="text" id="playlist-name" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-4 text-sm focus:ring-2 focus:ring-primary placeholder:text-slate-500 text-slate-900 dark:text-white" placeholder="输入播放列表名称"/>
+</div>
+
+<div class="flex justify-end gap-4">
+<button type="button" class="px-6 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" onclick="window.location.href='index.html'">取消</button>
+<button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors">开始上传</button>
+</div>
+</form>
+</div>
+
+<!-- Upload Progress Modal -->
+<div id="progress-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm hidden">
+<div class="w-full max-w-md bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 shadow-2xl">
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<h3 class="text-white font-semibold text-lg">正在上传 M3U 文件...</h3>
+<span id="progress-percentage" class="text-slate-400 text-xs font-medium">0%</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex-1 h-2.5 bg-slate-800 rounded-full overflow-hidden">
+<div id="progress-bar" class="h-full bg-[#258cf4] transition-all duration-300" style="width: 0%"></div>
+</div>
+<button id="cancel-upload" class="text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-xl">cancel</span>
+</button>
+</div>
+<div class="flex items-center justify-between text-xs">
+<span id="files-processed" class="text-slate-400">已处理 0/0 个文件</span>
+<span id="file-size" class="text-slate-500 font-mono">0KB / 0KB</span>
+</div>
+<div id="upload-status" class="text-xs text-slate-400 mt-2"></div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<footer class="bg-white dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 px-6 py-2 flex items-center justify-between shrink-0">
+<div class="flex items-center gap-6 text-xs text-slate-500 font-medium">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">info</span>
+<span>支持多文件上传</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<p class="text-[10px] text-slate-400 uppercase tracking-widest">M3U 管理仪表板 V2.4.0</p>
+</div>
+</footer>
+</div>
+
+<script>
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        // 绑定事件
+        bindEvents();
+    });
+    
+    // 绑定事件
+    function bindEvents() {
+        // 文件输入框变化事件
+        const fileInput = document.getElementById('file-input');
+        const dropArea = document.querySelector('label[for="file-input"]');
+        
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const fileName = this.files[0].name;
+                document.getElementById('upload-status').textContent = `已选择文件: ${fileName}`;
+            }
+        });
+        
+        // 拖放功能
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.classList.add('border-primary');
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('border-primary');
+        }
+        
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            if (files.length > 0) {
+                const fileName = files[0].name;
+                document.getElementById('upload-status').textContent = `已选择文件: ${fileName}`;
+            }
+        }
+        
+        // 表单提交事件
+        const uploadForm = document.getElementById('upload-form');
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('file-input');
+            if (fileInput.files.length === 0) {
+                alert('请选择一个M3U文件');
+                return;
+            }
+            
+            // 显示进度模态框
+            const progressModal = document.getElementById('progress-modal');
+            progressModal.classList.remove('hidden');
+            
+            // 执行真实的文件上传
+            uploadFile(fileInput.files[0]);
+        });
+        
+        // 取消上传按钮
+        const cancelUploadButton = document.getElementById('cancel-upload');
+        cancelUploadButton.addEventListener('click', function() {
+            const progressModal = document.getElementById('progress-modal');
+            progressModal.classList.add('hidden');
+        });
+    }
+    
+    // 真实的文件上传
+    function uploadFile(file) {
+        const progressBar = document.getElementById('progress-bar');
+        const progressPercentage = document.getElementById('progress-percentage');
+        const filesProcessed = document.getElementById('files-processed');
+        const fileSize = document.getElementById('file-size');
+        const uploadStatus = document.getElementById('upload-status');
+        
+        // 创建FormData对象
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // 创建XMLHttpRequest对象
+        const xhr = new XMLHttpRequest();
+        
+        // 更新初始进度信息
+        filesProcessed.textContent = `已处理 0/1 个文件`;
+        fileSize.textContent = `${formatFileSize(file.size)} / ${formatFileSize(file.size)}`;
+        uploadStatus.textContent = '正在上传文件...';
+        
+        // 监听上传进度
+        xhr.upload.addEventListener('progress', function(e) {
+            if (e.lengthComputable) {
+                const progress = Math.round((e.loaded / e.total) * 100);
+                progressBar.style.width = `${progress}%`;
+                progressPercentage.textContent = `${progress}%`;
+                
+                if (progress < 50) {
+                    uploadStatus.textContent = '正在上传文件...';
+                } else {
+                    uploadStatus.textContent = '正在处理文件...';
+                }
+            }
+        });
+        
+        // 监听上传完成
+        xhr.addEventListener('load', function() {
+            if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                if (response.status === 'success') {
+                    // 上传成功
+                    progressBar.style.width = '100%';
+                    progressPercentage.textContent = '100%';
+                    uploadStatus.textContent = '文件上传完成！';
+                    filesProcessed.textContent = `已处理 1/1 个文件`;
+                    
+                    // 跳转到主页
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                } else {
+                    // 上传失败
+                    uploadStatus.textContent = `上传失败: ${response.message}`;
+                    progressBar.classList.add('bg-red-500');
+                }
+            } else {
+                // 网络错误
+                uploadStatus.textContent = '上传失败: 网络错误';
+                progressBar.classList.add('bg-red-500');
+            }
+        });
+        
+        // 监听上传错误
+        xhr.addEventListener('error', function() {
+            uploadStatus.textContent = '上传失败: 未知错误';
+            progressBar.classList.add('bg-red-500');
+        });
+        
+        // 发送请求
+        xhr.open('POST', '/api/m3u/upload');
+        xhr.send(formData);
+    }
+    
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+        if (bytes < 1024) {
+            return bytes + ' B';
+        } else if (bytes < 1024 * 1024) {
+            return (bytes / 1024).toFixed(1) + ' KB';
+        } else {
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+    }
+</script>
+</body></html>

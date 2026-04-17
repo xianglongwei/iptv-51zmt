@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#258cf4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>Channel Status &amp; Health Check</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex items-center justify-center p-4 md:p-10 min-h-screen">
+<!-- Main Panel Container -->
+<div class="w-full max-w-4xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden">
+<!-- Header Section -->
+<header class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-3xl">analytics</span>
+<h1 class="text-xl font-bold tracking-tight">频道诊断</h1>
+</div>
+<button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-0">
+<!-- Left Sidebar: Channel Profile -->
+<div class="lg:col-span-5 p-8 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 flex flex-col items-center text-center">
+<div class="relative group mb-6 w-full aspect-video rounded-xl overflow-hidden bg-black ring-4 ring-primary/20 shadow-2xl">
+<img alt="Stream Preview" class="w-full h-full object-cover opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLlZUd0OFzQZ5m1PNBn7ni6aPOSTGpGBjHyi_pl9vTVvb92mjj4GLIzv4dZ3XKOFmekK-rik8UDevqbTaMg3ErZwv_npNyjcAHRSKHTCXRHo-SQKFFoWmZwI04fCtwmmjmQzVH22UqIQSr6Nbi-z0CQg--2w24CkQXz6Rxyn9hm9JMIz4-3SYyEu-9dYx87NwP2PW6oX9KDqrvreMGZG62GCTjk4USTGyQDfqvklH458rk47afNzryRk-Yvl9T-EgDcZI3JgZguHMz"/>
+<!-- Video Controls Overlay -->
+<div class="absolute inset-0 flex flex-col justify-between p-3 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-t from-black/80 via-transparent to-black/40">
+<div class="flex justify-end">
+<span class="bg-red-600 text-[10px] font-bold px-2 py-0.5 rounded text-white tracking-widest">LIVE</span>
+</div>
+<div class="flex items-center justify-between text-white">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-2xl cursor-pointer hover:text-primary transition-colors">play_arrow</span>
+<span class="material-symbols-outlined text-2xl cursor-pointer hover:text-primary transition-colors">volume_up</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-[10px] font-mono">1080p</span>
+<span class="material-symbols-outlined text-2xl cursor-pointer hover:text-primary transition-colors">fullscreen</span>
+</div>
+</div>
+</div>
+<!-- Play Button Center (Always visible slightly) -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="w-12 h-12 bg-primary/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-white text-3xl">play_arrow</span>
+</div>
+</div>
+<!-- Status Indicator -->
+<div class="absolute top-2 left-2 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm px-2 py-1 rounded-md">
+<div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+<span class="text-[10px] font-bold text-white uppercase">源活跃</span>
+</div>
+</div>
+<h2 class="text-2xl font-bold mb-1">游戏新闻 HD</h2>
+<p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Internal ID: CH-99203-X</p>
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold uppercase tracking-wider mb-8"><span class="w-2 h-2 rounded-full bg-green-500"></span> 状态：在线</div>
+<button class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-primary hover:bg-primary/90 text-white rounded-lg font-semibold transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-sm">refresh</span>
+                        Test Connection
+                    </button>
+<p class="mt-3 text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold">上次测试：2 分钟前</p>
+</div>
+<!-- Right Side: Stats & Logs -->
+<div class="lg:col-span-7 p-6 md:p-8 space-y-6">
+<!-- URL Section -->
+<section>
+<h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">直播流地址</h3>
+<div class="flex items-center gap-0 w-full group">
+<input class="flex-1 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-l-lg px-4 py-3 text-sm font-mono focus:ring-0 focus:outline-none" readonly="" type="text" value="https://stream.provider.net/v1/live/gn_hd_main_01"/>
+<button class="bg-primary px-4 py-3 rounded-r-lg text-white hover:bg-primary/90 transition-colors flex items-center">
+<span class="material-symbols-outlined text-xl">content_copy</span>
+</button>
+</div>
+</section>
+<!-- Connection Health Grid -->
+<section>
+<h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">连接健康度</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="p-4 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+<p class="text-xs font-medium text-slate-500 mb-1">延迟</p>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold">24ms</span>
+<span class="text-xs text-green-500 font-bold">稳定</span>
+</div>
+</div>
+<div class="p-4 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+<p class="text-xs font-medium text-slate-500 mb-1">运行时间 (30天)</p>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold">99.98%</span>
+<span class="text-xs text-primary font-bold">+0.02%</span>
+</div>
+</div>
+<div class="p-4 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+<p class="text-xs font-medium text-slate-500 mb-1">码率</p>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold">6.2</span>
+<span class="text-xs text-slate-500">Mbps</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Diagnostic Log -->
+<section>
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">诊断日志</h3>
+<button class="text-xs text-primary font-bold hover:underline">清除日志</button>
+</div>
+<div class="bg-slate-900 rounded-xl p-4 font-mono text-xs overflow-y-auto max-h-48 border border-slate-800">
+<div class="flex gap-3 mb-2 opacity-60">
+<span class="text-slate-500">[14:22:01]</span>
+<span class="text-green-400">INFO:</span>
+<span class="text-slate-300">与源服务器握手完成。</span>
+</div>
+<div class="flex gap-3 mb-2">
+<span class="text-slate-500">[14:21:45]</span>
+<span class="text-red-400 font-bold underline">ERROR:</span>
+<span class="text-slate-300">404 Not Found - 获取切片失败 99201.ts</span>
+</div>
+<div class="flex gap-3 mb-2 opacity-60">
+<span class="text-slate-500">[14:21:30]</span>
+<span class="text-amber-400">WARN:</span>
+<span class="text-slate-300">连接超时 - 500ms 后重试...</span>
+</div>
+<div class="flex gap-3 mb-2 opacity-60">
+<span class="text-slate-500">[14:20:55]</span>
+<span class="text-green-400">INFO:</span>
+<span class="text-slate-300">流由管理员启动</span>
+</div>
+<div class="flex gap-3 opacity-60">
+<span class="text-slate-500">[14:18:12]</span>
+<span class="text-slate-300">系统初始化，等待信号...</span>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- Footer Section -->
+<footer class="bg-slate-50 dark:bg-slate-800/20 border-t border-slate-200 dark:border-slate-800 px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-center gap-6">
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">活跃时长</span>
+<span class="text-sm font-semibold">12h 44m 12s</span>
+</div>
+<div class="flex flex-col border-l border-slate-200 dark:border-slate-800 pl-6">
+<span class="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">最高分辨率</span>
+<span class="text-sm font-semibold text-primary">1080p60</span>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex-1 md:flex-none px-6 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">编辑频道</button>
+<button class="flex-1 md:flex-none px-6 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-lg text-sm font-bold hover:opacity-90 transition-opacity">查看分析</button>
+</div>
+</footer>
+</div>
+</div>
+<script>
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取频道诊断信息
+        fetchChannelDiagnostics();
+        
+        // 绑定事件
+        bindEvents();
+    });
+    
+    // 获取频道诊断信息
+    function fetchChannelDiagnostics() {
+        // 模拟获取频道诊断信息
+        // 实际项目中应该从后端API获取
+        console.log('获取频道诊断信息...');
+        
+        // 模拟数据加载
+        setTimeout(() => {
+            // 这里可以更新页面上的诊断信息
+            console.log('频道诊断信息加载完成');
+        }, 1000);
+    }
+    
+    // 测试连接
+    function testConnection() {
+        const testButton = document.querySelector('button:contains("Test Connection")');
+        if (testButton) {
+            testButton.innerHTML = '<span class="material-symbols-outlined text-sm">sync</span>测试中...';
+            testButton.disabled = true;
+        }
+        
+        // 模拟测试连接
+        setTimeout(() => {
+            // 模拟测试结果
+            const isSuccess = Math.random() > 0.2; // 80%的概率成功
+            
+            if (isSuccess) {
+                alert('连接测试成功！');
+                // 更新状态为在线
+                const statusIndicator = document.querySelector('.w-2.h-2.rounded-full');
+                if (statusIndicator) {
+                    statusIndicator.className = 'w-2 h-2 rounded-full bg-green-500';
+                }
+                
+                const statusText = document.querySelector('span:contains("状态：")');
+                if (statusText) {
+                    statusText.textContent = '状态：在线';
+                    statusText.parentElement.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold uppercase tracking-wider mb-8';
+                }
+            } else {
+                alert('连接测试失败！');
+                // 更新状态为离线
+                const statusIndicator = document.querySelector('.w-2.h-2.rounded-full');
+                if (statusIndicator) {
+                    statusIndicator.className = 'w-2 h-2 rounded-full bg-red-500';
+                }
+                
+                const statusText = document.querySelector('span:contains("状态：")');
+                if (statusText) {
+                    statusText.textContent = '状态：离线';
+                    statusText.parentElement.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold uppercase tracking-wider mb-8';
+                }
+            }
+            
+            // 恢复按钮状态
+            if (testButton) {
+                testButton.innerHTML = '<span class="material-symbols-outlined text-sm">refresh</span>Test Connection';
+                testButton.disabled = false;
+            }
+            
+            // 更新上次测试时间
+            const lastTestElement = document.querySelector('p:contains("上次测试：")');
+            if (lastTestElement) {
+                lastTestElement.textContent = '上次测试：刚刚';
+            }
+        }, 2000);
+    }
+    
+    // 复制直播流地址
+    function copyStreamUrl() {
+        const urlInput = document.querySelector('input[readonly]');
+        if (urlInput) {
+            const streamUrl = urlInput.value;
+            navigator.clipboard.writeText(streamUrl)
+                .then(() => {
+                    alert('直播流地址已复制到剪贴板！');
+                })
+                .catch(err => {
+                    console.error('复制失败:', err);
+                    alert('复制失败，请手动复制');
+                });
+        }
+    }
+    
+    // 绑定事件
+    function bindEvents() {
+        // 测试连接按钮点击事件
+        const testButton = document.querySelector('button:contains("Test Connection")');
+        if (testButton) {
+            testButton.addEventListener('click', testConnection);
+        }
+        
+        // 复制直播流地址按钮点击事件
+        const copyButton = document.querySelector('button:contains("content_copy")');
+        if (copyButton) {
+            copyButton.addEventListener('click', copyStreamUrl);
+        }
+        
+        // 清除日志按钮点击事件
+        const clearLogButton = document.querySelector('button:contains("清除日志")');
+        if (clearLogButton) {
+            clearLogButton.addEventListener('click', function() {
+                const logContainer = document.querySelector('.bg-slate-900.rounded-xl.p-4.font-mono.text-xs');
+                if (logContainer) {
+                    logContainer.innerHTML = '<div class="flex gap-3 mb-2 opacity-60"><span class="text-slate-500">[当前时间]</span><span class="text-green-400">INFO:</span><span class="text-slate-300">日志已清除</span></div>';
+                }
+            });
+        }
+        
+        // 关闭按钮点击事件
+        const closeButton = document.querySelector('button:contains("close")');
+        if (closeButton) {
+            closeButton.addEventListener('click', function() {
+                window.location.href = 'index.html';
+            });
+        }
+        
+        // 编辑频道按钮点击事件
+        const editButton = document.querySelector('button:contains("编辑频道")');
+        if (editButton) {
+            editButton.addEventListener('click', function() {
+                alert('编辑频道功能开发中...');
+            });
+        }
+        
+        // 查看分析按钮点击事件
+        const analyticsButton = document.querySelector('button:contains("查看分析")');
+        if (analyticsButton) {
+            analyticsButton.addEventListener('click', function() {
+                alert('查看分析功能开发中...');
+            });
+        }
+    }
+    
+    // 辅助函数：查找包含特定文本的元素
+    (function() {
+        const contains = function(selector, text) {
+            const elements = document.querySelectorAll(selector);
+            return Array.from(elements).filter(element => {
+                return element.textContent.includes(text);
+            });
+        };
+        
+        // 添加到Element.prototype
+        Element.prototype.contains = function(text) {
+            return this.textContent.includes(text);
+        };
+    })();
+</script>
+</body></html>

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html class="dark" lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#258cf4",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+    <title>M3U测试页面</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+    <div class="flex h-screen flex-col overflow-hidden relative">
+        <!-- Header -->
+        <header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-6 py-3 shrink-0">
+            <div class="flex items-center gap-8">
+                <div class="flex items-center gap-3 text-primary">
+                    <span class="material-symbols-outlined text-3xl font-bold">test_tube</span>
+                    <h2 class="text-slate-900 dark:text-white text-xl font-bold tracking-tight">M3U测试页面</h2>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button id="back-btn" class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                    <span class="material-symbols-outlined text-lg">arrow_back</span>返回主页
+                </button>
+            </div>
+        </header>
+        
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto bg-slate-50 dark:bg-background-dark/50 p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 左侧：功能测试区 -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- 1. M3U文件上传测试 -->
+                    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">1. M3U文件上传测试</h3>
+                        <form id="upload-test-form" enctype="multipart/form-data" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">选择M3U文件</label>
+                                    <input type="file" id="upload-test-file" name="file" accept=".m3u,.m3u8" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-primary text-slate-900 dark:text-white"/>
+                                </div>
+                                <div class="col-span-1 flex items-end">
+                                    <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                                        <span class="material-symbols-outlined text-lg">upload_file</span>上传测试
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-600 dark:text-slate-400" id="upload-test-result">
+                                测试结果将显示在这里
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- 2. 频道列表测试 -->
+                    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">2. 频道列表测试</h3>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm text-slate-600 dark:text-slate-400">频道总数: <span id="channel-count-test">0</span></span>
+                            <button id="load-channels-test" class="bg-primary hover:bg-primary/90 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors">
+                                <span class="material-symbols-outlined text-sm">refresh</span>加载频道
+                            </button>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-600 dark:text-slate-400 h-48 overflow-y-auto" id="channel-list-test">
+                            点击"加载频道"按钮加载频道列表
+                        </div>
+                    </div>
+                    
+                    <!-- 3. M3U生成测试 -->
+                    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">3. M3U生成测试</h3>
+                        <div class="space-y-4">
+                            <div class="flex flex-wrap gap-2" id="channel-select-test">
+                                <span class="text-sm text-slate-600 dark:text-slate-400">请先加载频道列表</span>
+                            </div>
+                            <button id="generate-m3u-test" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                <span class="material-symbols-outlined text-lg">playlist_add</span>生成M3U
+                            </button>
+                            <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-600 dark:text-slate-400" id="generate-m3u-result">
+                                生成结果将显示在这里
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 4. 频道检测测试 -->
+                    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">4. 频道检测测试</h3>
+                        <div class="space-y-4">
+                            <div class="flex gap-4">
+                                <button id="check-all-channels-test" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                    <span class="material-symbols-outlined text-lg">checklist</span>批量检测
+                                </button>
+                                <button id="check-m3u-url-test" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                                    <span class="material-symbols-outlined text-lg">check_circle</span>检测M3U URL
+                                </button>
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-600 dark:text-slate-400 h-32 overflow-y-auto" id="check-result-test">
+                                检测结果将显示在这里
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 右侧：测试信息和状态 -->
+                <div class="space-y-6">
+                    <!-- 系统状态 -->
+                    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">系统状态</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-slate-600 dark:text-slate-400">API服务状态</span>
+                                <span id="api-status" class="text-sm font-medium text-red-500">未连接</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-slate-600 dark:text-slate-400">M3U文件状态</span>
+                                <span id="m3u-file-status" class="text-sm font-medium text-red-500">不存在</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-slate-600 dark:text-slate-400">已加载频道数</span>
+                                <span id="loaded-channels-count" class="text-sm font-medium text-slate-900 dark:text-white">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 测试统计 -->
+                    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">测试统计</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-slate-600 dark:text-slate-400">测试通过率</span>
+                                <span id="test-pass-rate" class="text-sm font-medium text-slate-900 dark:text-white">0%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-slate-600 dark:text-slate-400">成功测试</span>
+                                <span id="test-success-count" class="text-sm font-medium text-green-500">0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-slate-600 dark:text-slate-400">失败测试</span>
+                                <span id="test-fail-count" class="text-sm font-medium text-red-500">0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-slate-600 dark:text-slate-400">总测试数</span>
+                                <span id="test-total-count" class="text-sm font-medium text-slate-900 dark:text-white">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 测试日志 -->
+                    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">测试日志</h3>
+                        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-600 dark:text-slate-400 h-48 overflow-y-auto" id="test-logs">
+                            <div class="text-slate-500 dark:text-slate-500">测试日志将显示在这里</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- JavaScript -->
+    <script>
+        // 测试统计
+        let testStats = {
+            success: 0,
+            fail: 0,
+            total: 0
+        };
+        
+        // 存储频道数据
+        let allChannels = [];
+        
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 绑定事件
+            bindTestEvents();
+            // 初始化测试
+            initTestPage();
+        });
+        
+        // 初始化测试页面
+        function initTestPage() {
+            logTest('初始化测试页面...');
+            // 检查API服务状态
+            checkApiStatus();
+            // 检查M3U文件状态
+            checkM3UFileStatus();
+        }
+        
+        // 绑定测试事件
+        function bindTestEvents() {
+            // 返回主页按钮
+            document.getElementById('back-btn').addEventListener('click', function() {
+                window.location.href = 'index.html';
+            });
+            
+            // 1. M3U文件上传测试
+            document.getElementById('upload-test-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                testFileUpload();
+            });
+            
+            // 2. 加载频道测试
+            document.getElementById('load-channels-test').addEventListener('click', function() {
+                testLoadChannels();
+            });
+            
+            // 3. 生成M3U测试
+            document.getElementById('generate-m3u-test').addEventListener('click', function() {
+                testGenerateM3U();
+            });
+            
+            // 4. 批量检测测试
+            document.getElementById('check-all-channels-test').addEventListener('click', function() {
+                testCheckAllChannels();
+            });
+            
+            // 5. 检测M3U URL测试
+            document.getElementById('check-m3u-url-test').addEventListener('click', function() {
+                testCheckM3UUrl();
+            });
+        }
+        
+        // 检查API服务状态
+        function checkApiStatus() {
+            fetch('/api/m3u/info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('api-status').textContent = '正常';
+                        document.getElementById('api-status').className = 'text-sm font-medium text-green-500';
+                        logTest('API服务连接成功');
+                    } else {
+                        document.getElementById('api-status').textContent = '异常';
+                        logTest('API服务连接失败');
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('api-status').textContent = '异常';
+                    logTest('API服务连接失败: ' + error.message);
+                });
+        }
+        
+        // 检查M3U文件状态
+        function checkM3UFileStatus() {
+            fetch('/api/m3u/info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('m3u-file-status').textContent = '存在';
+                        document.getElementById('m3u-file-status').className = 'text-sm font-medium text-green-500';
+                        logTest('M3U文件存在');
+                    } else {
+                        document.getElementById('m3u-file-status').textContent = '不存在';
+                        logTest('M3U文件不存在');
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('m3u-file-status').textContent = '未知';
+                    logTest('检查M3U文件状态失败');
+                });
+        }
+        
+        // 1. 测试M3U文件上传
+        function testFileUpload() {
+            const fileInput = document.getElementById('upload-test-file');
+            const resultDiv = document.getElementById('upload-test-result');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                resultDiv.innerHTML = '<span class="text-red-500">请先选择一个M3U文件</span>';
+                updateTestStats('fail');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            resultDiv.innerHTML = '<span class="text-yellow-500">正在上传测试...</span>';
+            logTest(`开始上传测试: ${file.name}`);
+            
+            fetch('/api/m3u/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    resultDiv.innerHTML = `<span class="text-green-500">✓ 上传成功: ${data.message}</span>`;
+                    logTest(`上传测试成功: ${data.message}`);
+                    updateTestStats('success');
+                    // 重新检查M3U文件状态
+                    checkM3UFileStatus();
+                } else {
+                    resultDiv.innerHTML = `<span class="text-red-500">✗ 上传失败: ${data.message}</span>`;
+                    logTest(`上传测试失败: ${data.message}`);
+                    updateTestStats('fail');
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = `<span class="text-red-500">✗ 上传错误: ${error.message}</span>`;
+                logTest(`上传测试错误: ${error.message}`);
+                updateTestStats('fail');
+            });
+        }
+        
+        // 2. 测试加载频道
+        function testLoadChannels() {
+            const resultDiv = document.getElementById('channel-list-test');
+            const countSpan = document.getElementById('channel-count-test');
+            
+            resultDiv.innerHTML = '<span class="text-yellow-500">正在加载频道...</span>';
+            logTest('开始测试加载频道');
+            
+            fetch('/api/channels')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        allChannels = data.data.channels;
+                        
+                        // 更新频道列表
+                        resultDiv.innerHTML = '';
+                        const channelList = document.createElement('ul');
+                        channelList.className = 'space-y-2';
+                        
+                        data.data.channels.forEach(channel => {
+                            const listItem = document.createElement('li');
+                            listItem.className = 'flex items-center gap-2 text-sm';
+                            listItem.innerHTML = `
+                                <input type="checkbox" class="test-channel-checkbox" data-channel-id="${channel.id}" value="${channel.id}">
+                                <span class="font-medium text-slate-900 dark:text-white">${channel.name}</span>
+                                <span class="text-xs text-slate-500 dark:text-slate-500">(${channel.group})</span>
+                            `;
+                            channelList.appendChild(listItem);
+                        });
+                        
+                        resultDiv.appendChild(channelList);
+                        countSpan.textContent = data.data.total;
+                        document.getElementById('loaded-channels-count').textContent = data.data.total;
+                        
+                        // 更新生成M3U和批量检测按钮状态
+                        document.getElementById('generate-m3u-test').disabled = false;
+                        document.getElementById('check-all-channels-test').disabled = false;
+                        
+                        logTest(`加载频道测试成功: 共加载 ${data.data.total} 个频道`);
+                        updateTestStats('success');
+                        
+                        // 更新频道选择区域
+                        updateChannelSelectArea();
+                    } else {
+                        resultDiv.innerHTML = `<span class="text-red-500">✗ 加载频道失败: ${data.message}</span>`;
+                        logTest(`加载频道测试失败: ${data.message}`);
+                        updateTestStats('fail');
+                    }
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `<span class="text-red-500">✗ 加载频道错误: ${error.message}</span>`;
+                    logTest(`加载频道测试错误: ${error.message}`);
+                    updateTestStats('fail');
+                });
+        }
+        
+        // 更新频道选择区域
+        function updateChannelSelectArea() {
+            const channelSelect = document.getElementById('channel-select-test');
+            channelSelect.innerHTML = '';
+            
+            if (allChannels.length === 0) {
+                channelSelect.innerHTML = '<span class="text-slate-500 dark:text-slate-500">请先加载频道列表</span>';
+                return;
+            }
+            
+            const selectAll = document.createElement('div');
+            selectAll.className = 'flex items-center gap-2 mb-2';
+            selectAll.innerHTML = `
+                <input type="checkbox" id="test-select-all" class="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary bg-white dark:bg-slate-800">
+                <label for="test-select-all" class="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">全选</label>
+            `;
+            channelSelect.appendChild(selectAll);
+            
+            // 绑定全选事件
+            document.getElementById('test-select-all').addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.test-channel-checkbox');
+                checkboxes.forEach(cb => {
+                    cb.checked = this.checked;
+                });
+            });
+            
+            channelSelect.innerHTML += '<div class="text-xs text-slate-500 dark:text-slate-500 mt-1">勾选频道后点击"生成M3U"按钮进行测试</div>';
+        }
+        
+        // 3. 测试生成M3U
+        function testGenerateM3U() {
+            const resultDiv = document.getElementById('generate-m3u-result');
+            
+            // 获取选中的频道ID
+            const selectedChannelIds = Array.from(document.querySelectorAll('.test-channel-checkbox:checked'))
+                .map(cb => parseInt(cb.value));
+            
+            if (selectedChannelIds.length === 0) {
+                resultDiv.innerHTML = '<span class="text-red-500">请先选择至少一个频道</span>';
+                updateTestStats('fail');
+                return;
+            }
+            
+            resultDiv.innerHTML = '<span class="text-yellow-500">正在生成M3U文件...</span>';
+            logTest(`开始测试生成M3U，选中 ${selectedChannelIds.length} 个频道`);
+            
+            fetch('/api/m3u/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    channel_ids: selectedChannelIds
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    resultDiv.innerHTML = `
+                        <div class="space-y-2">
+                            <div><span class="text-green-500">✓ 生成成功: ${data.message}</span></div>
+                            <div class="text-sm"><strong>M3U URL:</strong> <a href="${data.data.m3u_url}" target="_blank" class="text-primary hover:underline">${data.data.m3u_url}</a></div>
+                            <div class="text-xs text-slate-500 dark:text-slate-500">点击链接可下载或查看生成的M3U文件</div>
+                        </div>
+                    `;
+                    logTest(`生成M3U测试成功: ${data.message}`);
+                    updateTestStats('success');
+                } else {
+                    resultDiv.innerHTML = `<span class="text-red-500">✗ 生成失败: ${data.message}</span>`;
+                    logTest(`生成M3U测试失败: ${data.message}`);
+                    updateTestStats('fail');
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = `<span class="text-red-500">✗ 生成错误: ${error.message}</span>`;
+                logTest(`生成M3U测试错误: ${error.message}`);
+                updateTestStats('fail');
+            });
+        }
+        
+        // 4. 测试批量检测频道
+        function testCheckAllChannels() {
+            const resultDiv = document.getElementById('check-result-test');
+            
+            if (allChannels.length === 0) {
+                resultDiv.innerHTML = '<span class="text-red-500">请先加载频道列表</span>';
+                updateTestStats('fail');
+                return;
+            }
+            
+            resultDiv.innerHTML = '<span class="text-yellow-500">正在批量检测频道...</span>';
+            logTest(`开始批量检测 ${allChannels.length} 个频道`);
+            
+            // 只检测前5个频道，避免请求过多
+            const testChannels = allChannels.slice(0, 5);
+            let completed = 0;
+            let successCount = 0;
+            let results = [];
+            
+            testChannels.forEach(channel => {
+                fetch(`/api/channel/${channel.id}/check`)
+                    .then(response => response.json())
+                    .then(data => {
+                        completed++;
+                        if (data.status === 'success') {
+                            successCount++;
+                            results.push(`<span class="text-green-500">✓ ${channel.name}: 在线 (${data.data.latency}ms)</span>`);
+                        } else {
+                            results.push(`<span class="text-red-500">✗ ${channel.name}: ${data.message}</span>`);
+                        }
+                        
+                        // 更新进度
+                        if (completed === testChannels.length) {
+                            resultDiv.innerHTML = `
+                                <div class="space-y-1">
+                                    <div><strong>批量检测结果:</strong></div>
+                                    ${results.join('<br>')}
+                                    <div class="mt-2 text-sm text-slate-500 dark:text-slate-500">
+                                        检测完成: ${successCount}/${testChannels.length} 个频道在线
+                                    </div>
+                                </div>
+                            `;
+                            logTest(`批量检测测试完成: ${successCount}/${testChannels.length} 个频道在线`);
+                            updateTestStats('success');
+                        }
+                    })
+                    .catch(error => {
+                        completed++;
+                        results.push(`<span class="text-red-500">✗ ${channel.name}: 检测错误</span>`);
+                        
+                        if (completed === testChannels.length) {
+                            resultDiv.innerHTML = `
+                                <div class="space-y-1">
+                                    <div><strong>批量检测结果:</strong></div>
+                                    ${results.join('<br>')}
+                                    <div class="mt-2 text-sm text-slate-500 dark:text-slate-500">
+                                        检测完成: ${successCount}/${testChannels.length} 个频道在线
+                                    </div>
+                                </div>
+                            `;
+                            logTest(`批量检测测试完成: ${successCount}/${testChannels.length} 个频道在线`);
+                            updateTestStats('fail');
+                        }
+                    });
+            });
+        }
+        
+        // 5. 测试检测M3U URL
+        function testCheckM3UUrl() {
+            const resultDiv = document.getElementById('check-result-test');
+            
+            resultDiv.innerHTML = '<span class="text-yellow-500">正在检测M3U URL...</span>';
+            logTest('开始测试检测M3U URL');
+            
+            fetch('/api/m3u/check')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        resultDiv.innerHTML = `<span class="text-green-500">✓ M3U URL检测通过: ${data.message}</span>`;
+                        logTest('M3U URL检测测试成功');
+                        updateTestStats('success');
+                    } else {
+                        resultDiv.innerHTML = `<span class="text-red-500">✗ M3U URL检测失败: ${data.message}</span>`;
+                        logTest(`M3U URL检测测试失败: ${data.message}`);
+                        updateTestStats('fail');
+                    }
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `<span class="text-red-500">✗ M3U URL检测错误: ${error.message}</span>`;
+                    logTest(`M3U URL检测测试错误: ${error.message}`);
+                    updateTestStats('fail');
+                });
+        }
+        
+        // 更新测试统计
+        function updateTestStats(result) {
+            testStats.total++;
+            if (result === 'success') {
+                testStats.success++;
+            } else {
+                testStats.fail++;
+            }
+            
+            // 更新统计显示
+            document.getElementById('test-success-count').textContent = testStats.success;
+            document.getElementById('test-fail-count').textContent = testStats.fail;
+            document.getElementById('test-total-count').textContent = testStats.total;
+            
+            // 计算通过率
+            const passRate = testStats.total > 0 ? Math.round((testStats.success / testStats.total) * 100) : 0;
+            document.getElementById('test-pass-rate').textContent = `${passRate}%`;
+        }
+        
+        // 记录测试日志
+        function logTest(message) {
+            const logsDiv = document.getElementById('test-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logItem = document.createElement('div');
+            logItem.className = 'mb-1';
+            logItem.innerHTML = `<span class="text-xs text-slate-500 dark:text-slate-500">[${timestamp}]</span> ${message}`;
+            logsDiv.appendChild(logItem);
+            // 滚动到底部
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>
