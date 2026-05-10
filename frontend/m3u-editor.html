@@ -282,7 +282,7 @@
       });
       const data = await response.json();
       if (!response.ok || data.status === 'error') {
-        throw new Error(data.message || '请求失败');
+        throw new Error(data.detail || data.message || '请求失败');
       }
       return data;
     }
@@ -367,8 +367,8 @@
     }
 
     async function loadChannels() {
-      const data = await api('/api/channels');
-      channels = data.data.channels || [];
+      const data = await api('/api/m3u-file/channels');
+      channels = data.channels || [];
       renderGroups();
       renderChannels();
       if (selectedId !== null) {
@@ -393,11 +393,11 @@
       }
       $('saveBtn').disabled = true;
       try {
-        const path = selectedId === null ? '/api/channels' : `/api/channels/${selectedId}`;
+        const path = selectedId === null ? '/api/m3u-file/channels' : `/api/m3u-file/channels/${selectedId}`;
         const method = selectedId === null ? 'POST' : 'PUT';
         const result = await api(path, { method, body: JSON.stringify(payload) });
         await loadChannels();
-        const next = result.data?.channel;
+        const next = result.channel;
         if (next) fillForm(next);
         setStatus(result.message || '已保存到 2.m3u');
       } catch (error) {
@@ -412,7 +412,7 @@
       if (!confirm('确认删除这个频道吗？')) return;
       $('deleteBtn').disabled = true;
       try {
-        const result = await api(`/api/channels/${selectedId}`, { method: 'DELETE' });
+        const result = await api(`/api/m3u-file/channels/${selectedId}`, { method: 'DELETE' });
         fillForm(null);
         await loadChannels();
         setStatus(result.message || '已删除');

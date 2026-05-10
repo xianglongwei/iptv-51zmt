@@ -751,6 +751,7 @@
             <input v-model.trim="searchText" class="search-slot w-full rounded-2xl py-3 pl-11 pr-4 text-sm outline-none transition" placeholder="搜索频道名、分组或来源...">
           </div>
           <button class="action-key primary-key rounded-2xl px-4 py-3 text-sm font-medium text-white transition" @click="showImportModal = true">导入 M3U</button>
+          <a class="action-key rounded-2xl px-4 py-3 text-sm transition inline-flex items-center" href="/m3u-editor">编辑 2.m3u</a>
           <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="openCrawlerConfig">爬虫设置</button>
           <button class="action-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="validateAll" :disabled="validating">{{ validating ? '检测中...' : '全局检测' }}</button>
           <button class="action-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="triggerAutoCrawl" :disabled="crawling || schedulerState.crawler.running">{{ (crawling || schedulerState.crawler.running) ? '爬取中...' : '手动爬取' }}</button>

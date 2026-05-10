@@ -22,6 +22,7 @@ from backend.crawler_config import load_crawler_config, save_crawler_config
 from backend.crawler import ChannelCrawler
 from backend.database import AsyncSessionLocal, ChannelPool, SelectedChannel, get_db, init_db
 from backend.m3u_generator import M3uGenerator
+from backend import m3u_file_editor
 from backend.preview_manager import PreviewManager
 from backend.published_config import load_published_config, save_published_config
 from backend.validator import ChannelValidator
@@ -57,6 +58,17 @@ class CrawlerConfigRequest(BaseModel):
 
 class PublishedConfigRequest(BaseModel):
     playlist_filename: str = Field(default="my_list.m3u")
+
+
+class M3uFileChannelRequest(BaseModel):
+    name: str
+    url: str
+    tvg_name: Optional[str] = None
+    tvg_logo: Optional[str] = None
+    group: Optional[str] = None
+    group_title: Optional[str] = None
+    catchup: Optional[str] = None
+    catchup_source: Optional[str] = None
 
 
 @asynccontextmanager
@@ -101,6 +113,14 @@ def frontend_path() -> str:
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "frontend",
         "index.html",
+    )
+
+
+def frontend_file_path(filename: str) -> str:
+    return os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "frontend",
+        filename,
     )
 
 
@@ -215,9 +235,50 @@ async def root():
     return FileResponse(frontend_path())
 
 
+@app.get("/m3u-editor")
+async def m3u_editor_page():
+    return FileResponse(frontend_file_path("m3u-editor.html"))
+
+
 @app.get("/api")
 async def api_info():
     return {"name": "Lumina-IPTV API", "version": "1.1.0", "docs": "/docs"}
+
+
+@app.get("/api/m3u-file/channels")
+async def get_m3u_file_channels():
+    channels = m3u_file_editor.parse_m3u_channels()
+    return {"total": len(channels), "channels": channels}
+
+
+@app.post("/api/m3u-file/channels")
+async def create_m3u_file_channel(request: M3uFileChannelRequest):
+    try:
+        payload = request.model_dump() if hasattr(request, "model_dump") else request.dict()
+        channel = m3u_file_editor.create_channel(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    channels = m3u_file_editor.parse_m3u_channels()
+    return {"status": "created", "channel": channel, "total": len(channels)}
+
+
+@app.put("/api/m3u-file/channels/{channel_id}")
+async def update_m3u_file_channel(channel_id: int, request: M3uFileChannelRequest):
+    try:
+        payload = request.model_dump() if hasattr(request, "model_dump") else request.dict()
+        channel = m3u_file_editor.update_channel(channel_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {"status": "updated", "channel": channel}
+
+
+@app.delete("/api/m3u-file/channels/{channel_id}")
+async def delete_m3u_file_channel(channel_id: int):
+    try:
+        total = m3u_file_editor.delete_channel(channel_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {"status": "deleted", "id": channel_id, "total": total}
 
 
 @app.get("/api/channels")
