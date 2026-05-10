@@ -477,6 +477,27 @@
       font-family: 'JetBrains Mono', monospace;
     }
 
+    .bulk-action-dock {
+      position: sticky;
+      top: 12px;
+      z-index: 12;
+      border: 0;
+      background: linear-gradient(145deg, rgba(245,247,250,0.98), rgba(226,233,242,0.98));
+      box-shadow: var(--shadow-floating);
+    }
+
+    .selection-dock {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      z-index: 40;
+      width: min(920px, calc(100vw - 28px));
+      transform: translateX(-50%);
+      border: 0;
+      background: linear-gradient(145deg, rgba(247,249,252,0.98), rgba(226,233,242,0.98));
+      box-shadow: var(--shadow-floating);
+    }
+
     .log-screen {
       border: 0 !important;
       background: linear-gradient(180deg, rgba(49,58,69,0.96), rgba(31,38,46,0.98)) !important;
@@ -802,12 +823,23 @@
                   <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="selectAllVisible">全选当前筛选</button>
                   <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="selectAllOnline">全选在线</button>
                   <button class="action-key danger-key rounded-2xl px-4 py-3 text-sm transition" @click="clearSelection">清空选择</button>
-                  <button class="action-key danger-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="deleteSelectedChannels" :disabled="selectedIds.size === 0">删除已选</button>
-                  <button class="action-key danger-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="deleteCurrentGroup" :disabled="!currentGroup">删除当前分组</button>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                  <button class="action-key primary-key rounded-2xl px-4 py-3 text-sm font-medium text-white transition disabled:opacity-50" @click="addSelectedToPublished" :disabled="selectedIds.size === 0 || addingBatch">{{ addingBatch ? '加入中...' : `加入播放列表 (${selectedIds.size})` }}</button>
-                  <button class="action-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="copySelectedUrls" :disabled="selectedIds.size === 0">复制已选地址</button>
+                <div class="bulk-action-dock rounded-[24px] p-4">
+                  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <div class="text-sm font-semibold text-slate-100">批量操作</div>
+                      <div class="mt-1 text-xs muted">当前显示 {{ filteredChannels.length }} 个，已选 {{ selectedIds.size }} 个<span v-if="currentGroup">，当前分组：{{ currentGroup }}</span></div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                      <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="selectAllVisible">全选当前筛选</button>
+                      <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="selectAllOnline">全选在线</button>
+                      <button class="action-key primary-key rounded-2xl px-4 py-3 text-sm font-medium text-white transition disabled:opacity-50" @click="addSelectedToPublished" :disabled="selectedIds.size === 0 || addingBatch">{{ addingBatch ? '加入中...' : `加入播放列表 (${selectedIds.size})` }}</button>
+                      <button class="action-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="copySelectedUrls" :disabled="selectedIds.size === 0">复制已选地址</button>
+                      <button class="action-key danger-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="deleteSelectedChannels" :disabled="selectedIds.size === 0">删除已选</button>
+                      <button class="action-key danger-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="deleteCurrentGroup" :disabled="!currentGroup">删除当前分组</button>
+                      <button class="action-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="clearSelection" :disabled="selectedIds.size === 0">清空选择</button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -953,6 +985,18 @@
               </div>
             </aside>
           </section>
+
+          <div v-if="activeWorkspace === 'channels' && selectedIds.size > 0" class="selection-dock rounded-[24px] p-4">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div class="text-sm font-semibold text-slate-100">已选 {{ selectedIds.size }} 个频道</div>
+              <div class="flex flex-wrap gap-2">
+                <button class="action-key primary-key rounded-2xl px-4 py-3 text-sm font-medium text-white transition disabled:opacity-50" @click="addSelectedToPublished" :disabled="addingBatch">{{ addingBatch ? '加入中...' : '加入播放列表' }}</button>
+                <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="copySelectedUrls">复制地址</button>
+                <button class="action-key danger-key rounded-2xl px-4 py-3 text-sm transition" @click="deleteSelectedChannels">删除已选</button>
+                <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="clearSelection">取消选择</button>
+              </div>
+            </div>
+          </div>
 
           <section v-if="activeWorkspace === 'crawler'" class="panel rounded-[28px] p-6">
             <div class="flex flex-col gap-4">
