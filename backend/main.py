@@ -38,6 +38,10 @@ class SelectedBatchRequest(BaseModel):
     pool_ids: list[int] = Field(default_factory=list)
 
 
+class ChannelBatchDeleteRequest(BaseModel):
+    ids: list[int] = Field(default_factory=list)
+
+
 class SelectedReorderRequest(BaseModel):
     id: int
     order: int
@@ -69,6 +73,10 @@ class M3uFileChannelRequest(BaseModel):
     group_title: Optional[str] = None
     catchup: Optional[str] = None
     catchup_source: Optional[str] = None
+
+
+class M3uFileBatchDeleteRequest(BaseModel):
+    ids: list[int] = Field(default_factory=list)
 
 
 @asynccontextmanager
@@ -281,6 +289,26 @@ async def delete_m3u_file_channel(channel_id: int):
     return {"status": "deleted", "id": channel_id, "total": total}
 
 
+@app.post("/api/m3u-file/channels/batch-delete")
+async def delete_m3u_file_channels(request: M3uFileBatchDeleteRequest):
+    if not request.ids:
+        raise HTTPException(status_code=400, detail="ids is required")
+    try:
+        result = m3u_file_editor.delete_channels(request.ids)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {"status": "deleted", **result}
+
+
+@app.delete("/api/m3u-file/groups/{group_name}")
+async def delete_m3u_file_group(group_name: str):
+    try:
+        result = m3u_file_editor.delete_group(group_name)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {"status": "deleted", "group": group_name, **result}
+
+
 @app.get("/api/channels")
 async def get_channels(
     group: Optional[str] = None,
@@ -345,6 +373,67 @@ async def delete_channel(channel_id: int, db: AsyncSession = Depends(get_db)):
     await db.delete(channel)
     await db.commit()
     return {"status": "deleted", "id": channel_id}
+
+
+@app.post("/api/channels/batch-delete")
+async def delete_channels_batch(
+    request: ChannelBatchDeleteRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    pool_ids = sorted(set(request.ids))
+    if not pool_ids:
+        raise HTTPException(status_code=400, detail="ids is required")
+
+    selected_rows = await db.execute(
+        select(SelectedChannel).where(SelectedChannel.pool_id.in_(pool_ids))
+    )
+    selected_count = 0
+    for item in selected_rows.scalars().all():
+        await db.delete(item)
+        selected_count += 1
+
+    channel_rows = await db.execute(select(ChannelPool).where(ChannelPool.id.in_(pool_ids)))
+    deleted_count = 0
+    for channel in channel_rows.scalars().all():
+        await db.delete(channel)
+        deleted_count += 1
+
+    await db.commit()
+    return {"status": "deleted", "deleted_channels": deleted_count, "deleted_selected": selected_count}
+
+
+@app.delete("/api/channels/group/{group_title}")
+async def delete_channel_group(group_title: str, db: AsyncSession = Depends(get_db)):
+    normalized = group_title.strip()
+    if not normalized:
+        raise HTTPException(status_code=400, detail="group_title is required")
+
+    channel_rows = await db.execute(
+        select(ChannelPool).where(ChannelPool.group_title == normalized)
+    )
+    channels = channel_rows.scalars().all()
+    if not channels:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    pool_ids = [channel.id for channel in channels]
+    selected_rows = await db.execute(
+        select(SelectedChannel).where(SelectedChannel.pool_id.in_(pool_ids))
+    )
+    selected_count = 0
+    for item in selected_rows.scalars().all():
+        await db.delete(item)
+        selected_count += 1
+
+    for channel in channels:
+        await db.delete(channel)
+
+    await db.commit()
+    return {
+        "status": "deleted",
+        "group": normalized,
+        "deleted_channels": len(channels),
+        "deleted_selected": selected_count,
+    }
 
 
 @app.get("/api/groups")

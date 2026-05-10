@@ -164,3 +164,36 @@ def delete_channel(channel_id: int) -> int:
     del lines[extinf_index : url_index + 1]
     write_m3u_lines(lines)
     return len(parse_m3u_channels())
+
+
+def delete_channels(channel_ids: list[int]) -> dict[str, int]:
+    lines = read_m3u_lines()
+    ranges = []
+    seen = set()
+    for channel_id in channel_ids:
+        if channel_id in seen:
+            continue
+        seen.add(channel_id)
+        extinf_index, url_index = find_channel_line(lines, channel_id)
+        ranges.append((extinf_index, url_index))
+
+    for extinf_index, url_index in sorted(ranges, reverse=True):
+        del lines[extinf_index : url_index + 1]
+
+    write_m3u_lines(lines)
+    return {"deleted": len(ranges), "total": len(parse_m3u_channels())}
+
+
+def delete_group(group: str) -> dict[str, int]:
+    normalized = (group or "").strip()
+    if not normalized:
+        raise ValueError("分组不能为空")
+
+    channel_ids = [
+        channel["id"]
+        for channel in parse_m3u_channels()
+        if (channel.get("group") or "未分组") == normalized
+    ]
+    if not channel_ids:
+        raise ValueError("未找到对应分组")
+    return delete_channels(channel_ids)

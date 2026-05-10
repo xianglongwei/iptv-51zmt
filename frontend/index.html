@@ -802,6 +802,8 @@
                   <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="selectAllVisible">全选当前筛选</button>
                   <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="selectAllOnline">全选在线</button>
                   <button class="action-key danger-key rounded-2xl px-4 py-3 text-sm transition" @click="clearSelection">清空选择</button>
+                  <button class="action-key danger-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="deleteSelectedChannels" :disabled="selectedIds.size === 0">删除已选</button>
+                  <button class="action-key danger-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="deleteCurrentGroup" :disabled="!currentGroup">删除当前分组</button>
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <button class="action-key primary-key rounded-2xl px-4 py-3 text-sm font-medium text-white transition disabled:opacity-50" @click="addSelectedToPublished" :disabled="selectedIds.size === 0 || addingBatch">{{ addingBatch ? '加入中...' : `加入播放列表 (${selectedIds.size})` }}</button>
@@ -1602,6 +1604,41 @@
         const selectAllOnline = () => { selectedIds.value = new Set(filteredChannels.value.filter((channel) => channel.is_active).map((channel) => channel.id)); };
         const clearSelection = () => { selectedIds.value = new Set(); };
 
+        const deleteSelectedChannels = async () => {
+          const ids = [...selectedIds.value];
+          if (!ids.length) return;
+          const confirmed = window.confirm(`确认删除已选中的 ${ids.length} 个频道吗？这也会从发布列表中移除对应频道。`);
+          if (!confirmed) return;
+          try {
+            const data = await request('/api/channels/batch-delete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ids })
+            });
+            selectedIds.value = new Set();
+            await refreshAll();
+            showToast(`已删除 ${data.deleted_channels || 0} 个频道`);
+          } catch (error) {
+            showToast(error.message, 'error');
+          }
+        };
+
+        const deleteCurrentGroup = async () => {
+          if (!currentGroup.value) return;
+          const count = filteredChannels.value.length;
+          const confirmed = window.confirm(`确认删除「${currentGroup.value}」分组下的 ${count} 个频道吗？这也会从发布列表中移除对应频道。`);
+          if (!confirmed) return;
+          try {
+            const data = await request(`/api/channels/group/${encodeURIComponent(currentGroup.value)}`, { method: 'DELETE' });
+            currentGroup.value = '';
+            selectedIds.value = new Set();
+            await refreshAll();
+            showToast(`已删除分组「${data.group || ''}」中的 ${data.deleted_channels || 0} 个频道`);
+          } catch (error) {
+            showToast(error.message, 'error');
+          }
+        };
+
         const copyText = async (text, message) => {
           if (!text) return showToast('没有可复制的内容', 'error');
           try { await navigator.clipboard.writeText(text); showToast(message); }
@@ -2049,7 +2086,7 @@
           activeWorkspace, addingBatch, addOne, addSelectedToPublished, catchupFilter, channelBadge, checkChannel,
           clearPublished, clearSelection, copyPlaylist, copyPublishedUrls, copySelectedUrls, copyText,
           crawlerConfigForm, crawlerImportSummary, crawlerLogLines, crawlerStatusClass, crawlerStatusText, crawlerTriggerText,
-          crawling, currentGroup, currentSource, currentViewSubtitle, currentViewTitle, deleteSource, deletingSource, diagnostic, doImport, fileInput, filteredChannels, formatFileSize, formatLatency, formatTime, groups, importing,
+          crawling, currentGroup, currentSource, currentViewSubtitle, currentViewTitle, deleteCurrentGroup, deleteSelectedChannels, deleteSource, deletingSource, diagnostic, doImport, fileInput, filteredChannels, formatFileSize, formatLatency, formatTime, groups, importing,
           importSourceTag, importUrl, onlineCount, openCrawlerConfig, openDiagnostic, publishedChannels, publishedConfig, publishedNameDrafts, publishedPoolIds,
           previewState, previewVideo, refreshAll, refreshSchedulerState, removePublished, renamePublished, resetDiagnosticLogs, resetPublishedName, saveCrawlerConfig, savePublishedConfig, savePublishedName, savingCrawlerConfig, savingPublishedConfig, schedulerState,
           searchText, selectAllOnline, selectAllVisible, selectedIds, setGroup, setSource, setSourceAndFocus, setWorkspace, showCrawlerConfigModal, showImportModal,

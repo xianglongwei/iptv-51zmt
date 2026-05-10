@@ -44,10 +44,10 @@
     }
     main {
       display: grid;
-      grid-template-columns: minmax(320px, 440px) minmax(360px, 1fr);
+      grid-template-columns: minmax(340px, 500px) minmax(360px, 1fr);
       gap: 18px;
       padding: 18px;
-      max-width: 1440px;
+      max-width: 1480px;
       margin: 0 auto;
     }
     .panel {
@@ -68,6 +68,12 @@
       grid-template-columns: 1fr 150px;
       gap: 10px;
     }
+    .bulk-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
     input, select, textarea {
       width: 100%;
       border: 1px solid var(--line);
@@ -76,6 +82,12 @@
       font: inherit;
       color: var(--ink);
       background: #fff;
+    }
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      flex: 0 0 auto;
     }
     textarea {
       min-height: 84px;
@@ -106,24 +118,27 @@
       cursor: not-allowed;
     }
     .list {
-      height: calc(100vh - 178px);
+      height: calc(100vh - 238px);
       overflow: auto;
     }
     .channel {
       display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: start;
       width: 100%;
       padding: 13px 14px;
-      border: 0;
       border-bottom: 1px solid var(--line);
       background: #fff;
       color: var(--ink);
       text-align: left;
-      cursor: pointer;
     }
     .channel:hover, .channel.active {
       background: #ecfdf5;
+    }
+    .channel-main {
+      min-width: 0;
+      cursor: pointer;
     }
     .channel strong {
       display: block;
@@ -200,6 +215,7 @@
       <div class="status" id="summary">正在读取频道...</div>
     </div>
     <div class="actions">
+      <button class="secondary" id="homeBtn" type="button">返回后台</button>
       <button class="secondary" id="reloadBtn" type="button">刷新</button>
       <button id="newBtn" type="button">新增频道</button>
     </div>
@@ -213,6 +229,12 @@
           <select id="groupFilter">
             <option value="">全部分组</option>
           </select>
+        </div>
+        <div class="bulk-row">
+          <button class="secondary" id="selectVisibleBtn" type="button">全选当前筛选</button>
+          <button class="secondary" id="clearSelectedBtn" type="button">清空选择</button>
+          <button class="danger" id="deleteSelectedBtn" type="button">删除选中</button>
+          <button class="danger" id="deleteGroupBtn" type="button">删除当前分类</button>
         </div>
       </div>
       <div class="list" id="channelList"></div>
@@ -251,7 +273,7 @@
         <div class="actions">
           <button id="saveBtn" type="submit">保存</button>
           <button class="secondary" id="resetBtn" type="button">重置</button>
-          <button class="danger" id="deleteBtn" type="button">删除</button>
+          <button class="danger" id="deleteBtn" type="button">删除当前频道</button>
         </div>
         <div class="status" id="formStatus">选择左侧频道进行编辑，或点击新增频道。</div>
       </form>
@@ -261,6 +283,7 @@
   <script>
     let channels = [];
     let selectedId = null;
+    let selectedIds = new Set();
 
     const $ = (id) => document.getElementById(id);
 
@@ -337,22 +360,36 @@
       $('groupFilter').value = groups.includes(current) ? current : '';
     }
 
+    function syncSelection() {
+      const validIds = new Set(channels.map((channel) => channel.id));
+      selectedIds = new Set([...selectedIds].filter((id) => validIds.has(id)));
+      if (selectedId !== null && !validIds.has(selectedId)) {
+        fillForm(null);
+      }
+    }
+
     function renderChannels() {
       const list = $('channelList');
       const visible = filteredChannels();
-      $('summary').textContent = `共 ${channels.length} 个频道，当前显示 ${visible.length} 个`;
+      $('summary').textContent = `共 ${channels.length} 个频道，当前显示 ${visible.length} 个，已选 ${selectedIds.size} 个`;
+      $('deleteSelectedBtn').disabled = selectedIds.size === 0;
+      $('clearSelectedBtn').disabled = selectedIds.size === 0;
+      $('deleteGroupBtn').disabled = !$('groupFilter').value;
+
       if (!visible.length) {
         list.innerHTML = '<div class="empty">没有找到频道</div>';
         return;
       }
+
       list.innerHTML = visible.map((channel) => `
-        <button class="channel ${channel.id === selectedId ? 'active' : ''}" type="button" data-id="${channel.id}">
-          <div>
+        <div class="channel ${channel.id === selectedId ? 'active' : ''}" data-id="${channel.id}">
+          <input class="channel-select" type="checkbox" data-id="${channel.id}" ${selectedIds.has(channel.id) ? 'checked' : ''} aria-label="选择频道">
+          <div class="channel-main" data-id="${channel.id}">
             <strong>${escapeHtml(channel.name || channel.tvg_name || '未命名频道')}</strong>
             <span>${escapeHtml(channel.url || '')}</span>
           </div>
           <em class="pill">${escapeHtml(channel.group || '未分组')}</em>
-        </button>
+        </div>
       `).join('');
     }
 
@@ -369,6 +406,7 @@
     async function loadChannels() {
       const data = await api('/api/m3u-file/channels');
       channels = data.channels || [];
+      syncSelection();
       renderGroups();
       renderChannels();
       if (selectedId !== null) {
@@ -378,9 +416,21 @@
     }
 
     $('channelList').addEventListener('click', (event) => {
-      const button = event.target.closest('.channel');
-      if (!button) return;
-      const channel = channels.find((item) => item.id === Number(button.dataset.id));
+      const checkbox = event.target.closest('.channel-select');
+      if (checkbox) {
+        const id = Number(checkbox.dataset.id);
+        if (checkbox.checked) {
+          selectedIds.add(id);
+        } else {
+          selectedIds.delete(id);
+        }
+        renderChannels();
+        return;
+      }
+
+      const main = event.target.closest('.channel-main');
+      if (!main) return;
+      const channel = channels.find((item) => item.id === Number(main.dataset.id));
       if (channel) fillForm(channel);
     });
 
@@ -413,6 +463,7 @@
       $('deleteBtn').disabled = true;
       try {
         const result = await api(`/api/m3u-file/channels/${selectedId}`, { method: 'DELETE' });
+        selectedIds.delete(selectedId);
         fillForm(null);
         await loadChannels();
         setStatus(result.message || '已删除');
@@ -423,6 +474,55 @@
       }
     });
 
+    $('selectVisibleBtn').addEventListener('click', () => {
+      selectedIds = new Set(filteredChannels().map((channel) => channel.id));
+      renderChannels();
+    });
+
+    $('clearSelectedBtn').addEventListener('click', () => {
+      selectedIds = new Set();
+      renderChannels();
+    });
+
+    $('deleteSelectedBtn').addEventListener('click', async () => {
+      const ids = [...selectedIds];
+      if (!ids.length) return;
+      if (!confirm(`确认删除选中的 ${ids.length} 个频道吗？`)) return;
+      $('deleteSelectedBtn').disabled = true;
+      try {
+        const result = await api('/api/m3u-file/channels/batch-delete', {
+          method: 'POST',
+          body: JSON.stringify({ ids })
+        });
+        selectedIds = new Set();
+        fillForm(null);
+        await loadChannels();
+        setStatus(`已删除 ${result.deleted || 0} 个频道`);
+      } catch (error) {
+        setStatus(error.message);
+      }
+    });
+
+    $('deleteGroupBtn').addEventListener('click', async () => {
+      const group = $('groupFilter').value;
+      if (!group) return;
+      const count = filteredChannels().length;
+      if (!confirm(`确认删除「${group}」分类下的 ${count} 个频道吗？`)) return;
+      $('deleteGroupBtn').disabled = true;
+      try {
+        const result = await api(`/api/m3u-file/groups/${encodeURIComponent(group)}`, { method: 'DELETE' });
+        selectedIds = new Set();
+        fillForm(null);
+        await loadChannels();
+        setStatus(`已删除分类「${group}」中的 ${result.deleted || 0} 个频道`);
+      } catch (error) {
+        setStatus(error.message);
+      } finally {
+        renderChannels();
+      }
+    });
+
+    $('homeBtn').addEventListener('click', () => { window.location.href = '/'; });
     $('newBtn').addEventListener('click', () => fillForm(null));
     $('resetBtn').addEventListener('click', () => {
       const channel = channels.find((item) => item.id === selectedId);
