@@ -775,7 +775,7 @@
           <a class="action-key rounded-2xl px-4 py-3 text-sm transition inline-flex items-center" href="/m3u-editor">编辑 2.m3u</a>
           <button class="action-key rounded-2xl px-4 py-3 text-sm transition" @click="openCrawlerConfig">爬虫设置</button>
           <button class="action-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="validateAll" :disabled="validating">{{ validating ? '检测中...' : '全局检测' }}</button>
-          <button class="action-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="triggerAutoCrawl" :disabled="crawling || schedulerState.crawler.running">{{ (crawling || schedulerState.crawler.running) ? '爬取中...' : '手动爬取' }}</button>
+          <button class="action-key rounded-2xl px-4 py-3 text-sm transition disabled:opacity-50" @click="triggerAutoCrawl" :disabled="crawling">{{ crawling ? '爬取中...' : '手动爬取' }}</button>
           <button class="action-key icon-key rounded-full p-3 transition" @click="refreshAll">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M5.64 19A9 9 0 0119 5.64M18.36 19A9 9 0 015 5.64"/>
@@ -2024,7 +2024,7 @@
         };
 
         const triggerAutoCrawl = async () => {
-          if (crawling.value || schedulerState.value.crawler.running) return;
+          if (crawling.value) return;
           crawling.value = true;
           clearInterval(crawlPollingTimer);
           schedulerState.value = {
@@ -2059,7 +2059,8 @@
             showToast(`爬取完成：新增 ${stats.added || 0}，更新 ${stats.updated || 0}，未变化 ${stats.unchanged || 0}${createdHint}`);
           } catch (error) {
             await pollSchedulerState();
-            showToast(error.message || '爬取失败', 'error');
+            const message = error.message === 'Crawler is already running' ? '爬虫正在运行，请稍后刷新状态' : (error.message || '爬取失败');
+            showToast(message, 'error');
           } finally {
             clearInterval(crawlPollingTimer);
             crawlPollingTimer = null;

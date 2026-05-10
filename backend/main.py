@@ -954,12 +954,18 @@ async def get_scheduler_state():
 @app.post("/api/crawler/run")
 async def run_crawler():
     """Manually trigger the crawler script and return runtime state."""
+    from backend.scheduler import get_scheduler_state as scheduler_state
     from backend.scheduler import run_crawler_pipeline
 
     try:
+        state = scheduler_state()
+        if state.get("crawler", {}).get("running"):
+            raise HTTPException(status_code=409, detail="Crawler is already running")
         return await run_crawler_pipeline(trigger="manual")
     except TimeoutError:
         raise HTTPException(status_code=504, detail="Crawler timeout after 120 seconds")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
