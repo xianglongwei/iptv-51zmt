@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.database import ChannelPool
+from backend.database import ChannelPool, SelectedChannel
 from backend.m3u_parser import match_catchup_template, parse_m3u_content, parse_m3u_file
 
 
@@ -26,6 +26,40 @@ class ChannelCrawler:
         for channel in channels:
             action = await self._upsert_channel(channel, source_tag)
             stats[action] += 1
+
+        await self.db.commit()
+        return stats
+
+    async def sync_from_m3u_file(self, file_path: str, source_tag: str) -> dict:
+        """Mirror one file source into the channel pool, pruning removed channels."""
+        channels = parse_m3u_file(file_path)
+        stats = {"added": 0, "updated": 0, "unchanged": 0, "deleted": 0, "deleted_selected": 0}
+        file_urls = {channel.get("live_url", "").strip() for channel in channels if channel.get("live_url")}
+
+        for channel in channels:
+            action = await self._upsert_channel(channel, source_tag)
+            stats[action] += 1
+
+        stale_rows = await self.db.execute(
+            select(ChannelPool).where(ChannelPool.source_tag == source_tag)
+        )
+        stale_channels = [
+            channel for channel in stale_rows.scalars().all()
+            if channel.live_url not in file_urls
+        ]
+        stale_ids = [channel.id for channel in stale_channels]
+
+        if stale_ids:
+            selected_rows = await self.db.execute(
+                select(SelectedChannel).where(SelectedChannel.pool_id.in_(stale_ids))
+            )
+            for selected in selected_rows.scalars().all():
+                await self.db.delete(selected)
+                stats["deleted_selected"] += 1
+
+        for channel in stale_channels:
+            await self.db.delete(channel)
+            stats["deleted"] += 1
 
         await self.db.commit()
         return stats

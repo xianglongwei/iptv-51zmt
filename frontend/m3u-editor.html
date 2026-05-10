@@ -314,6 +314,12 @@
       $('formStatus').textContent = message;
     }
 
+    function syncText(result) {
+      const sync = result?.sync;
+      if (!sync) return '';
+      return `，已同步管理器：新增 ${sync.added || 0}，更新 ${sync.updated || 0}，删除 ${sync.deleted || 0}`;
+    }
+
     function currentPayload() {
       return {
         name: fields.name.value.trim(),
@@ -449,7 +455,7 @@
         await loadChannels();
         const next = result.channel;
         if (next) fillForm(next);
-        setStatus(result.message || '已保存到 2.m3u');
+        setStatus((result.message || '已保存到 2.m3u') + syncText(result));
       } catch (error) {
         setStatus(error.message);
       } finally {
@@ -466,7 +472,7 @@
         selectedIds.delete(selectedId);
         fillForm(null);
         await loadChannels();
-        setStatus(result.message || '已删除');
+        setStatus((result.message || '已删除') + syncText(result));
       } catch (error) {
         setStatus(error.message);
       } finally {
@@ -497,7 +503,7 @@
         selectedIds = new Set();
         fillForm(null);
         await loadChannels();
-        setStatus(`已删除 ${result.deleted || 0} 个频道`);
+        setStatus(`已删除 ${result.deleted || 0} 个频道${syncText(result)}`);
       } catch (error) {
         setStatus(error.message);
       }
@@ -514,7 +520,7 @@
         selectedIds = new Set();
         fillForm(null);
         await loadChannels();
-        setStatus(`已删除分类「${group}」中的 ${result.deleted || 0} 个频道`);
+        setStatus(`已删除分类「${group}」中的 ${result.deleted || 0} 个频道${syncText(result)}`);
       } catch (error) {
         setStatus(error.message);
       } finally {

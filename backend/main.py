@@ -137,6 +137,15 @@ async def get_next_sort_order(db: AsyncSession) -> int:
     return (result.scalar() or 0) + 1
 
 
+async def sync_default_m3u_file(db: AsyncSession) -> dict:
+    config = load_crawler_config()
+    crawler = ChannelCrawler(db)
+    return await crawler.sync_from_m3u_file(
+        m3u_file_editor.M3U_FILE,
+        config["source_tag"],
+    )
+
+
 def infer_file_source_tag(filename: str | None, fallback: str = "手动文件导入") -> str:
     cleaned = (filename or "").strip()
     if not cleaned:
@@ -260,53 +269,74 @@ async def get_m3u_file_channels():
 
 
 @app.post("/api/m3u-file/channels")
-async def create_m3u_file_channel(request: M3uFileChannelRequest):
+async def create_m3u_file_channel(
+    request: M3uFileChannelRequest,
+    db: AsyncSession = Depends(get_db),
+):
     try:
         payload = request.model_dump() if hasattr(request, "model_dump") else request.dict()
         channel = m3u_file_editor.create_channel(payload)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    sync_stats = await sync_default_m3u_file(db)
     channels = m3u_file_editor.parse_m3u_channels()
-    return {"status": "created", "channel": channel, "total": len(channels)}
+    return {"status": "created", "channel": channel, "total": len(channels), "sync": sync_stats}
 
 
 @app.put("/api/m3u-file/channels/{channel_id}")
-async def update_m3u_file_channel(channel_id: int, request: M3uFileChannelRequest):
+async def update_m3u_file_channel(
+    channel_id: int,
+    request: M3uFileChannelRequest,
+    db: AsyncSession = Depends(get_db),
+):
     try:
         payload = request.model_dump() if hasattr(request, "model_dump") else request.dict()
         channel = m3u_file_editor.update_channel(channel_id, payload)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return {"status": "updated", "channel": channel}
+    sync_stats = await sync_default_m3u_file(db)
+    return {"status": "updated", "channel": channel, "sync": sync_stats}
 
 
 @app.delete("/api/m3u-file/channels/{channel_id}")
-async def delete_m3u_file_channel(channel_id: int):
+async def delete_m3u_file_channel(
+    channel_id: int,
+    db: AsyncSession = Depends(get_db),
+):
     try:
         total = m3u_file_editor.delete_channel(channel_id)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return {"status": "deleted", "id": channel_id, "total": total}
+    sync_stats = await sync_default_m3u_file(db)
+    return {"status": "deleted", "id": channel_id, "total": total, "sync": sync_stats}
 
 
 @app.post("/api/m3u-file/channels/batch-delete")
-async def delete_m3u_file_channels(request: M3uFileBatchDeleteRequest):
+async def delete_m3u_file_channels(
+    request: M3uFileBatchDeleteRequest,
+    db: AsyncSession = Depends(get_db),
+):
     if not request.ids:
         raise HTTPException(status_code=400, detail="ids is required")
     try:
         result = m3u_file_editor.delete_channels(request.ids)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return {"status": "deleted", **result}
+    sync_stats = await sync_default_m3u_file(db)
+    return {"status": "deleted", **result, "sync": sync_stats}
 
 
 @app.delete("/api/m3u-file/groups/{group_name}")
-async def delete_m3u_file_group(group_name: str):
+async def delete_m3u_file_group(
+    group_name: str,
+    db: AsyncSession = Depends(get_db),
+):
     try:
         result = m3u_file_editor.delete_group(group_name)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return {"status": "deleted", "group": group_name, **result}
+    sync_stats = await sync_default_m3u_file(db)
+    return {"status": "deleted", "group": group_name, **result, "sync": sync_stats}
 
 
 @app.get("/api/channels")
