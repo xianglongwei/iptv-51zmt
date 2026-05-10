@@ -249,12 +249,12 @@ def apply_channel_sorting(stmt, sort_by: str, sort_direction: str):
 
 @app.get("/")
 async def root():
-    return FileResponse(frontend_path())
+    return FileResponse(frontend_path(), headers={"Cache-Control": "no-store"})
 
 
 @app.get("/m3u-editor")
 async def m3u_editor_page():
-    return FileResponse(frontend_file_path("m3u-editor.html"))
+    return FileResponse(frontend_file_path("m3u-editor.html"), headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api")
