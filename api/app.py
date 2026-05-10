@@ -3,6 +3,7 @@ import os
 import sys
 import time
 import re
+import tempfile
 from datetime import datetime
 
 # 添加项目根目录到Python路径
@@ -25,6 +26,11 @@ def index():
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return send_from_directory(root_dir, 'index.html')
 
+@app.route('/m3u-editor')
+def m3u_editor():
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return send_from_directory(root_dir, 'm3u-editor.html')
+
 @app.route('/<path:path>')
 def static_files(path):
     # 获取项目根目录
@@ -33,6 +39,119 @@ def static_files(path):
 
 # 全局变量用于存储日志
 logs = []
+
+def read_m3u_lines():
+    """Read 2.m3u with a small set of common playlist encodings."""
+    encodings = ('utf-8-sig', 'utf-8', 'gb18030', 'gbk')
+    last_error = None
+    for encoding in encodings:
+        try:
+            with open(M3U_FILE, 'r', encoding=encoding) as f:
+                return f.read().splitlines()
+        except UnicodeDecodeError as exc:
+            last_error = exc
+    raise last_error or UnicodeDecodeError('utf-8', b'', 0, 1, 'Unable to decode file')
+
+def write_m3u_lines(lines):
+    """Atomically write normalized M3U lines back to 2.m3u."""
+    content = '\n'.join(lines).rstrip() + '\n'
+    directory = os.path.dirname(M3U_FILE)
+    fd, temp_path = tempfile.mkstemp(prefix='2.', suffix='.m3u.tmp', dir=directory, text=True)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(content)
+        os.replace(temp_path, M3U_FILE)
+    finally:
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
+
+def parse_extinf_attrs(line):
+    attrs = dict(re.findall(r'([\w-]+)="([^"]*)"', line))
+    display_name = line.split(',', 1)[1].strip() if ',' in line else attrs.get('tvg-name', '')
+    return attrs, display_name
+
+def build_extinf_line(channel):
+    attrs = []
+    for key in ('tvg-id', 'tvg-name', 'tvg-logo', 'group-title', 'catchup', 'catchup-source'):
+        value = str(channel.get(key) or '').strip()
+        if value:
+            attrs.append(f'{key}="{value.replace(chr(34), "")}"')
+    name = str(channel.get('name') or channel.get('tvg-name') or '未命名频道').strip()
+    return f'#EXTINF:-1 {" ".join(attrs)},{name}'
+
+def parse_m3u_channels():
+    if not os.path.exists(M3U_FILE):
+        return []
+
+    lines = read_m3u_lines()
+    channels = []
+    i = 0
+    channel_number = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if line.startswith('#EXTINF'):
+            attrs, name = parse_extinf_attrs(line)
+            url_index = i + 1
+            url = ''
+            while url_index < len(lines):
+                candidate = lines[url_index].strip()
+                if candidate and not candidate.startswith('#'):
+                    url = candidate
+                    break
+                url_index += 1
+            channels.append({
+                'id': i,
+                'index': channel_number,
+                'extinf_line': line,
+                'url_line': url_index if url else None,
+                'name': name,
+                'tvg_name': attrs.get('tvg-name', name),
+                'tvg_logo': attrs.get('tvg-logo', ''),
+                'group': attrs.get('group-title', '未分组'),
+                'catchup': attrs.get('catchup', ''),
+                'catchup_source': attrs.get('catchup-source', ''),
+                'url': url,
+                'logo': attrs.get('tvg-logo', ''),
+                'status': 'online' if hash(name) % 2 == 0 else 'offline',
+                'attrs': attrs,
+            })
+            channel_number += 1
+            i = max(url_index + 1, i + 1)
+        else:
+            i += 1
+    return channels
+
+def find_channel_line(lines, channel_id):
+    if channel_id < 0 or channel_id >= len(lines) or not lines[channel_id].strip().startswith('#EXTINF'):
+        raise ValueError('未找到对应频道')
+
+    url_index = channel_id + 1
+    while url_index < len(lines):
+        candidate = lines[url_index].strip()
+        if candidate and not candidate.startswith('#'):
+            return channel_id, url_index
+        if candidate.startswith('#EXTINF'):
+            break
+        url_index += 1
+    return channel_id, channel_id + 1
+
+def request_channel_payload():
+    data = request.get_json(silent=True) or {}
+    name = str(data.get('name') or data.get('tvg_name') or '').strip()
+    url = str(data.get('url') or '').strip()
+    if not name:
+        raise ValueError('频道名称不能为空')
+    if not url:
+        raise ValueError('播放地址不能为空')
+    return {
+        'name': name,
+        'tvg-name': str(data.get('tvg_name') or name).strip(),
+        'tvg-logo': str(data.get('tvg_logo') or data.get('logo') or '').strip(),
+        'group-title': str(data.get('group') or data.get('group_title') or '未分组').strip(),
+        'catchup': str(data.get('catchup') or '').strip(),
+        'catchup-source': str(data.get('catchup_source') or '').strip(),
+        'url': url,
+    }
 
 def log_message(message):
     """记录日志信息"""
@@ -234,6 +353,16 @@ def get_channels():
                 'message': f'文件 {M3U_FILE} 不存在'
             })
         
+        channels = parse_m3u_channels()
+        return jsonify({
+            'status': 'success',
+            'message': '频道列表获取成功',
+            'data': {
+                'channels': channels,
+                'total': len(channels)
+            }
+        })
+
         # 解析M3U文件
         channels = []
         with open(M3U_FILE, 'r', encoding='utf-8') as f:
@@ -293,6 +422,72 @@ def get_channels():
             'status': 'error',
             'message': f'获取频道列表失败: {e}'
         })
+
+@app.route('/api/channels', methods=['POST'])
+def create_channel():
+    """Add one channel to 2.m3u."""
+    try:
+        payload = request_channel_payload()
+        lines = read_m3u_lines() if os.path.exists(M3U_FILE) else ['#EXTM3U']
+        if not lines or not lines[0].startswith('#EXTM3U'):
+            lines.insert(0, '#EXTM3U')
+        lines.extend([build_extinf_line(payload), payload['url']])
+        write_m3u_lines(lines)
+        channels = parse_m3u_channels()
+        return jsonify({
+            'status': 'success',
+            'message': '频道已添加',
+            'data': {'channel': channels[-1] if channels else None, 'total': len(channels)}
+        })
+    except ValueError as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+    except Exception as e:
+        log_message(f"添加频道失败: {e}")
+        return jsonify({'status': 'error', 'message': f'添加频道失败: {e}'}), 500
+
+@app.route('/api/channels/<int:channel_id>', methods=['PUT'])
+def update_channel(channel_id):
+    """Update one channel in 2.m3u."""
+    try:
+        payload = request_channel_payload()
+        lines = read_m3u_lines()
+        extinf_index, url_index = find_channel_line(lines, channel_id)
+        lines[extinf_index] = build_extinf_line(payload)
+        if url_index < len(lines):
+            lines[url_index] = payload['url']
+        else:
+            lines.append(payload['url'])
+        write_m3u_lines(lines)
+        channel = next((item for item in parse_m3u_channels() if item['id'] == channel_id), None)
+        return jsonify({
+            'status': 'success',
+            'message': '频道已更新',
+            'data': {'channel': channel}
+        })
+    except ValueError as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+    except Exception as e:
+        log_message(f"更新频道失败: {e}")
+        return jsonify({'status': 'error', 'message': f'更新频道失败: {e}'}), 500
+
+@app.route('/api/channels/<int:channel_id>', methods=['DELETE'])
+def delete_channel(channel_id):
+    """Delete one channel from 2.m3u."""
+    try:
+        lines = read_m3u_lines()
+        extinf_index, url_index = find_channel_line(lines, channel_id)
+        del lines[extinf_index:url_index + 1]
+        write_m3u_lines(lines)
+        return jsonify({
+            'status': 'success',
+            'message': '频道已删除',
+            'data': {'id': channel_id, 'total': len(parse_m3u_channels())}
+        })
+    except ValueError as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 404
+    except Exception as e:
+        log_message(f"删除频道失败: {e}")
+        return jsonify({'status': 'error', 'message': f'删除频道失败: {e}'}), 500
 
 @app.route('/api/channel/<int:channel_id>/check', methods=['GET'])
 def check_channel(channel_id):

@@ -451,12 +451,16 @@ http://192.168.10.1:10000/rtp/239.93.1.126:5140
 http://192.168.10.1:10000/rtp/239.93.1.127:5140
 #EXTINF:-1 tvg-name="雷速体育直播" tvg-logo="https://github.com/fanmingming/live/tree/main/tv/None.png" group-title="抖音",雷速体育直播
 http://192.168.10.10:35455/douyin/uid/LeisuSport
+#EXTINF:-1 tvg-name="雷速体育直播2" tvg-logo="https://github.com/fanmingming/live/tree/main/tv/None.png" group-title="抖音",雷速体育直播
+http://192.168.10.10:35455/douyin/uid/leisutiyu_app
 #EXTINF:-1 tvg-name="四川观察" tvg-logo="https://github.com/fanmingming/live/tree/main/tv/None.png" group-title="抖音",四川观察
 http://192.168.10.10:35455/douyin/uid/scgcnews
 #EXTINF:-1 tvg-name="四川省城市足球联赛" tvg-logo="https://github.com/fanmingming/live/tree/main/tv/None.png" group-title="抖音",四川省城市足球联赛
 http://192.168.10.10:35455/douyin/uid/69625750465
 #EXTINF:-1 tvg-name="四川省城市足球协会" tvg-logo="https://github.com/fanmingming/live/tree/main/tv/None.png" group-title="抖音",四川省城市足球协会
 http://192.168.10.10:35455/douyin/uid/SCFA
+#EXTINF:-1 tvg-name="球竞" tvg-logo="https://github.com/fanmingming/live/tree/main/tv/None.png" group-title="抖音",球竞
+http://192.168.10.10:35455/douyin/uid/55964764333
 #EXTINF:-1,tvg-id="BRTV纪实科教" tvg-name="BRTV纪实科教" tvg-logo="https://epg.v1.mk/logo/BRTV纪实科教.png" group-title="YY",纪晓岚
 #EXTM3U x-tvg-url="https://epg.v1.mk/fy.xml"
 #EXTINF:-1,tvg-id="IHOT爱军武" tvg-name="IHOT爱军武" tvg-logo="https://epg.v1.mk/logo/IHOT爱军武.png" group-title="YY",武林外传
@@ -1642,5 +1646,3 @@ http://192.168.10.1:10000/rtp/239.94.1.69:5140
 http://192.168.10.1:10000/rtp/239.94.1.70:5140
 #EXTINF:-1 tvg-name="CCTV-4K画中画-全网组播" group-title="卫视" catchup-source="rtsp://182.139.234.40/PLTV/89888988/224/3221228839/763897642.smil?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-4K画中画-全网组播
 http://192.168.10.1:10000/rtp/239.94.2.163:5140
-#EXTINF:-1 tvg-name="多彩文体4K" group-title="卫视" catchup-source="rtsp://182.139.234.40/PLTV/446/224/3221228675/735169480.smil?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",多彩文体4K
-http://192.168.10.1:10000/rtp/239.94.1.176:5140

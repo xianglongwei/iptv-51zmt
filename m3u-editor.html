@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2.m3u 频道编辑器</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef2f6;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #64748b;
+      --line: #d8e0ea;
+      --accent: #0f766e;
+      --accent-strong: #0b5f59;
+      --danger: #b4233b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.9);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      backdrop-filter: blur(10px);
+    }
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+    main {
+      display: grid;
+      grid-template-columns: minmax(320px, 440px) minmax(360px, 1fr);
+      gap: 18px;
+      padding: 18px;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 0;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+    }
+    .toolbar {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .toolbar-row {
+      display: grid;
+      grid-template-columns: 1fr 150px;
+      gap: 10px;
+    }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 11px 12px;
+      font: inherit;
+      color: var(--ink);
+      background: #fff;
+    }
+    textarea {
+      min-height: 84px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+    button {
+      border: 0;
+      border-radius: 6px;
+      min-height: 42px;
+      padding: 0 14px;
+      font: inherit;
+      font-weight: 700;
+      color: #fff;
+      background: var(--accent);
+      cursor: pointer;
+    }
+    button:hover { background: var(--accent-strong); }
+    button.secondary {
+      color: var(--ink);
+      background: #e8eef5;
+    }
+    button.secondary:hover { background: #dce5ef; }
+    button.danger { background: var(--danger); }
+    button.danger:hover { background: #941b30; }
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .list {
+      height: calc(100vh - 178px);
+      overflow: auto;
+    }
+    .channel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      width: 100%;
+      padding: 13px 14px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+    }
+    .channel:hover, .channel.active {
+      background: #ecfdf5;
+    }
+    .channel strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 14px;
+    }
+    .channel span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pill {
+      align-self: start;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 12px;
+      padding: 4px 8px;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    form {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+    }
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding-top: 4px;
+    }
+    .status {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .empty {
+      padding: 36px 18px;
+      color: var(--muted);
+      text-align: center;
+    }
+    @media (max-width: 860px) {
+      header { align-items: flex-start; flex-direction: column; }
+      main { grid-template-columns: 1fr; }
+      .list { height: 42vh; }
+      .form-grid, .toolbar-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>2.m3u 频道编辑器</h1>
+      <div class="status" id="summary">正在读取频道...</div>
+    </div>
+    <div class="actions">
+      <button class="secondary" id="reloadBtn" type="button">刷新</button>
+      <button id="newBtn" type="button">新增频道</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="toolbar">
+        <div class="toolbar-row">
+          <input id="searchInput" placeholder="搜索频道、分组或地址">
+          <select id="groupFilter">
+            <option value="">全部分组</option>
+          </select>
+        </div>
+      </div>
+      <div class="list" id="channelList"></div>
+    </section>
+
+    <section class="panel">
+      <form id="channelForm">
+        <input type="hidden" id="channelId">
+        <div class="form-grid">
+          <label>频道名称
+            <input id="nameInput" required placeholder="例如 CCTV-1">
+          </label>
+          <label>tvg-name
+            <input id="tvgNameInput" placeholder="为空时使用频道名称">
+          </label>
+        </div>
+        <label>播放地址
+          <textarea id="urlInput" required placeholder="http://... 或 rtp://..."></textarea>
+        </label>
+        <div class="form-grid">
+          <label>分组
+            <input id="groupInput" placeholder="例如 央视">
+          </label>
+          <label>台标地址
+            <input id="logoInput" placeholder="https://...">
+          </label>
+        </div>
+        <div class="form-grid">
+          <label>catchup
+            <input id="catchupInput" placeholder="append">
+          </label>
+          <label>catchup-source
+            <input id="catchupSourceInput" placeholder="回看模板，可留空">
+          </label>
+        </div>
+        <div class="actions">
+          <button id="saveBtn" type="submit">保存</button>
+          <button class="secondary" id="resetBtn" type="button">重置</button>
+          <button class="danger" id="deleteBtn" type="button">删除</button>
+        </div>
+        <div class="status" id="formStatus">选择左侧频道进行编辑，或点击新增频道。</div>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    let channels = [];
+    let selectedId = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    const fields = {
+      id: $('channelId'),
+      name: $('nameInput'),
+      tvgName: $('tvgNameInput'),
+      url: $('urlInput'),
+      group: $('groupInput'),
+      logo: $('logoInput'),
+      catchup: $('catchupInput'),
+      catchupSource: $('catchupSourceInput')
+    };
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
+        ...options
+      });
+      const data = await response.json();
+      if (!response.ok || data.status === 'error') {
+        throw new Error(data.message || '请求失败');
+      }
+      return data;
+    }
+
+    function setStatus(message) {
+      $('formStatus').textContent = message;
+    }
+
+    function currentPayload() {
+      return {
+        name: fields.name.value.trim(),
+        tvg_name: fields.tvgName.value.trim(),
+        url: fields.url.value.trim(),
+        group: fields.group.value.trim(),
+        tvg_logo: fields.logo.value.trim(),
+        catchup: fields.catchup.value.trim(),
+        catchup_source: fields.catchupSource.value.trim()
+      };
+    }
+
+    function fillForm(channel = null) {
+      selectedId = channel ? channel.id : null;
+      fields.id.value = channel?.id ?? '';
+      fields.name.value = channel?.name ?? '';
+      fields.tvgName.value = channel?.tvg_name ?? '';
+      fields.url.value = channel?.url ?? '';
+      fields.group.value = channel?.group ?? '';
+      fields.logo.value = channel?.tvg_logo ?? channel?.logo ?? '';
+      fields.catchup.value = channel?.catchup ?? '';
+      fields.catchupSource.value = channel?.catchup_source ?? '';
+      $('deleteBtn').disabled = selectedId === null;
+      setStatus(channel ? `正在编辑第 ${channel.index + 1} 个频道` : '正在新增频道');
+      renderChannels();
+    }
+
+    function filteredChannels() {
+      const term = $('searchInput').value.trim().toLowerCase();
+      const group = $('groupFilter').value;
+      return channels.filter((channel) => {
+        const matchesGroup = !group || channel.group === group;
+        const haystack = `${channel.name} ${channel.tvg_name} ${channel.group} ${channel.url}`.toLowerCase();
+        return matchesGroup && (!term || haystack.includes(term));
+      });
+    }
+
+    function renderGroups() {
+      const current = $('groupFilter').value;
+      const groups = [...new Set(channels.map((item) => item.group || '未分组'))].sort();
+      $('groupFilter').innerHTML = '<option value="">全部分组</option>' + groups.map((group) => (
+        `<option value="${escapeHtml(group)}">${escapeHtml(group)}</option>`
+      )).join('');
+      $('groupFilter').value = groups.includes(current) ? current : '';
+    }
+
+    function renderChannels() {
+      const list = $('channelList');
+      const visible = filteredChannels();
+      $('summary').textContent = `共 ${channels.length} 个频道，当前显示 ${visible.length} 个`;
+      if (!visible.length) {
+        list.innerHTML = '<div class="empty">没有找到频道</div>';
+        return;
+      }
+      list.innerHTML = visible.map((channel) => `
+        <button class="channel ${channel.id === selectedId ? 'active' : ''}" type="button" data-id="${channel.id}">
+          <div>
+            <strong>${escapeHtml(channel.name || channel.tvg_name || '未命名频道')}</strong>
+            <span>${escapeHtml(channel.url || '')}</span>
+          </div>
+          <em class="pill">${escapeHtml(channel.group || '未分组')}</em>
+        </button>
+      `).join('');
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    async function loadChannels() {
+      const data = await api('/api/channels');
+      channels = data.data.channels || [];
+      renderGroups();
+      renderChannels();
+      if (selectedId !== null) {
+        const updated = channels.find((item) => item.id === selectedId);
+        if (updated) fillForm(updated);
+      }
+    }
+
+    $('channelList').addEventListener('click', (event) => {
+      const button = event.target.closest('.channel');
+      if (!button) return;
+      const channel = channels.find((item) => item.id === Number(button.dataset.id));
+      if (channel) fillForm(channel);
+    });
+
+    $('channelForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = currentPayload();
+      if (!payload.name || !payload.url) {
+        setStatus('频道名称和播放地址不能为空');
+        return;
+      }
+      $('saveBtn').disabled = true;
+      try {
+        const path = selectedId === null ? '/api/channels' : `/api/channels/${selectedId}`;
+        const method = selectedId === null ? 'POST' : 'PUT';
+        const result = await api(path, { method, body: JSON.stringify(payload) });
+        await loadChannels();
+        const next = result.data?.channel;
+        if (next) fillForm(next);
+        setStatus(result.message || '已保存到 2.m3u');
+      } catch (error) {
+        setStatus(error.message);
+      } finally {
+        $('saveBtn').disabled = false;
+      }
+    });
+
+    $('deleteBtn').addEventListener('click', async () => {
+      if (selectedId === null) return;
+      if (!confirm('确认删除这个频道吗？')) return;
+      $('deleteBtn').disabled = true;
+      try {
+        const result = await api(`/api/channels/${selectedId}`, { method: 'DELETE' });
+        fillForm(null);
+        await loadChannels();
+        setStatus(result.message || '已删除');
+      } catch (error) {
+        setStatus(error.message);
+      } finally {
+        $('deleteBtn').disabled = selectedId === null;
+      }
+    });
+
+    $('newBtn').addEventListener('click', () => fillForm(null));
+    $('resetBtn').addEventListener('click', () => {
+      const channel = channels.find((item) => item.id === selectedId);
+      fillForm(channel || null);
+    });
+    $('reloadBtn').addEventListener('click', loadChannels);
+    $('searchInput').addEventListener('input', renderChannels);
+    $('groupFilter').addEventListener('change', renderChannels);
+
+    loadChannels().catch((error) => {
+      $('summary').textContent = error.message;
+      setStatus(error.message);
+    });
+  </script>
+</body>
+</html>
