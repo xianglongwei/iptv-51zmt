@@ -1975,7 +1975,7 @@
             await Promise.all([loadGroups(), loadSources(), loadChannels(), loadSelected(), loadSchedulerState()]);
             const stats = data.import_stats || {};
             const createdHint = data.crawler?.created_default_output ? '，已自动创建默认输出文件' : '';
-            showToast(`爬取完成，新增 ${stats.added || 0}，更新 ${stats.updated || 0}${createdHint}`);
+            showToast(`爬取完成：新增 ${stats.added || 0}，更新 ${stats.updated || 0}，未变化 ${stats.unchanged || 0}${createdHint}`);
           } catch (error) {
             await pollSchedulerState();
             showToast(error.message || '爬取失败', 'error');
