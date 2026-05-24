@@ -2,14 +2,14 @@
 Lumina-IPTV Database Configuration
 SQLAlchemy async engine with SQLite
 """
-import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from datetime import datetime
+from backend.paths import data_path
 
 # Database path
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "iptv_manager.db")
+DB_PATH = data_path("iptv_manager.db", seed_from_project=True)
 DATABASE_URL = f"sqlite+aiosqlite:///{DB_PATH}"
 
 # Async engine

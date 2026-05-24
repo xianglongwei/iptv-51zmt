@@ -4,5 +4,5 @@ services:
     ports:
       - "8099:8000"
     volumes:
-      - .:/app
+      - ./data:/app/data
     restart: always

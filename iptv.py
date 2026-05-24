@@ -7,7 +7,9 @@ import requests
 
 
 API_URL = os.getenv("IPTV_API_URL", "https://epg.51zmt.top:8001/multicast/api/channels/1/")
-M3U_FILE = os.getenv("IPTV_M3U_FILE", "2.m3u")
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.abspath(os.getenv("IPTV_DATA_DIR", PROJECT_ROOT))
+M3U_FILE = os.getenv("IPTV_M3U_FILE", os.path.join(DATA_DIR, "2.m3u"))
 RTP_PREFIX = os.getenv("IPTV_RTP_PREFIX", "http://192.168.10.1:10000/rtp/")
 PLAYSEEK_PARAM = os.getenv(
     "IPTV_PLAYSEEK_PARAM",

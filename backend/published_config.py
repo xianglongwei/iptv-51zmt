@@ -9,9 +9,10 @@ import os
 import re
 from typing import Any
 
+from backend.paths import data_path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONFIG_PATH = os.path.join(PROJECT_ROOT, "published_config.json")
+CONFIG_PATH = data_path("published_config.json", seed_from_project=True)
 DEFAULT_PLAYLIST_FILENAME = "my_list.m3u"
 SAFE_FILENAME_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
 

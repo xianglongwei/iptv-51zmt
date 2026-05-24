@@ -9,10 +9,11 @@ import json
 import os
 from typing import Any
 
+from backend.paths import DATA_DIR, data_path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IPTV_SCRIPT = os.path.join(PROJECT_ROOT, "iptv.py")
-CONFIG_PATH = os.path.join(PROJECT_ROOT, "crawler_config.json")
+CONFIG_PATH = data_path("crawler_config.json", seed_from_project=True)
 DEFAULT_INTERVAL_HOURS = 12
 DEFAULT_SOURCE_TAG = "爬虫默认源"
 
@@ -68,7 +69,7 @@ def resolve_m3u_path(path: str) -> str:
     value = _normalize_m3u_path(path)
     if os.path.isabs(value):
         return value
-    return os.path.join(PROJECT_ROOT, value)
+    return os.path.join(DATA_DIR, value)
 
 
 def _build_note(using_saved_config: bool, load_error: str | None) -> str:

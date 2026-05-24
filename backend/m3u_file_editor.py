@@ -4,9 +4,10 @@ import re
 import tempfile
 from typing import Any
 
+from backend.paths import data_path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-M3U_FILE = os.path.join(PROJECT_ROOT, "2.m3u")
+M3U_FILE = data_path("2.m3u", seed_from_project=True, default_content="#EXTM3U\n")
 
 
 def read_m3u_lines() -> list[str]:
