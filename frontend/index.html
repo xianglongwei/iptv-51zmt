@@ -1507,6 +1507,10 @@
           selectedIds.value = new Set([...selectedIds.value].filter((id) => validIds.has(id)));
         };
 
+        const syncM3uFile = async () => {
+          await request('/api/m3u-file/sync', { method: 'POST' });
+        };
+
         const loadSelected = async () => {
           const data = await request('/api/selected');
           publishedChannels.value = data.channels || [];
@@ -1567,7 +1571,10 @@
         };
 
         const refreshAll = async () => {
-          try { await Promise.all([loadGroups(), loadSources(), loadChannels(), loadSelected(), loadSchedulerState(), loadPublishedConfig()]); }
+          try {
+            await syncM3uFile();
+            await Promise.all([loadGroups(), loadSources(), loadChannels(), loadSelected(), loadSchedulerState(), loadPublishedConfig()]);
+          }
           catch (error) { showToast(error.message, 'error'); }
         };
 

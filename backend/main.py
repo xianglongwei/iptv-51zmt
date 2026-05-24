@@ -268,6 +268,12 @@ async def get_m3u_file_channels():
     return {"total": len(channels), "channels": channels}
 
 
+@app.post("/api/m3u-file/sync")
+async def sync_m3u_file_channels(db: AsyncSession = Depends(get_db)):
+    sync_stats = await sync_default_m3u_file(db)
+    return {"status": "synced", "sync": sync_stats}
+
+
 @app.post("/api/m3u-file/channels")
 async def create_m3u_file_channel(
     request: M3uFileChannelRequest,
