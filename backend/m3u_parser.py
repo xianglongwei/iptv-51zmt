@@ -102,10 +102,11 @@ def parse_extinf_line(line: str) -> Dict:
     if match:
         channel['catchup_type'] = match.group(1)
 
-    # Extract channel name (after comma)
+    # Extract channel display name (after comma). This is what users usually
+    # edit in 2.m3u, so prefer it for the manager's visible channel name.
     if ',' in line:
         name = line.split(',')[-1].strip()
-        if not channel['tvg_name']:
+        if name:
             channel['tvg_name'] = name
 
     return channel
