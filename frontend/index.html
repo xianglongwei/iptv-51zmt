@@ -1685,8 +1685,34 @@
 
         const copyText = async (text, message) => {
           if (!text) return showToast('没有可复制的内容', 'error');
-          try { await navigator.clipboard.writeText(text); showToast(message); }
-          catch (error) { showToast('复制失败，请检查浏览器权限', 'error'); }
+          const value = String(text);
+          try {
+            if (navigator.clipboard && window.isSecureContext) {
+              await navigator.clipboard.writeText(value);
+              showToast(message);
+              return;
+            }
+            throw new Error('Clipboard API unavailable');
+          } catch (error) {
+            const textarea = document.createElement('textarea');
+            textarea.value = value;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            textarea.setSelectionRange(0, textarea.value.length);
+            try {
+              const copied = document.execCommand('copy');
+              showToast(copied ? message : '复制失败，请手动选择文本复制', copied ? 'success' : 'error');
+            } catch (fallbackError) {
+              showToast('复制失败，请手动选择文本复制', 'error');
+            } finally {
+              document.body.removeChild(textarea);
+            }
+          }
         };
 
         const copyPlaylist = async () => {
